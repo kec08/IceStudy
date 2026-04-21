@@ -1,0 +1,32 @@
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/
+*.pbxproj
+
+# Build
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Dependencies
+Pods/
+Carthage/
+.build/
+.swiftpm/
+
+# OS
+.DS_Store
+*.swp
+*~
+
+# Git
+.git/
+
+# Design assets (reference only)
+../화면 자료/
+
+# Backend (separate project)
+../Backend/
