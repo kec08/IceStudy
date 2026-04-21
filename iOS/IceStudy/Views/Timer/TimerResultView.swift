@@ -44,15 +44,15 @@ struct TimerResultView: View {
                 Button {
                     viewModel.reset()
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 12) {
                         Image(systemName: isCompleted ? "checkmark" : "arrow.uturn.left")
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: 22, weight: .bold))
                         Text(isCompleted ? "완료" : "돌아가기")
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.system(size: 26, weight: .bold))
                     }
                     .foregroundColor(AppColor.primary)
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, 60)
             }
         }
     }

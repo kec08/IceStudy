@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @State private var weekOffset: Int = 0
+    @State private var showCalendar = false
 
     // 임시 데이터
     private let filledML: Int = 1800
@@ -63,9 +64,12 @@ struct HomeView: View {
                     calendarFAB
                         .padding(.trailing, 24)
                 }
-                .padding(.top, 12)
-                .padding(.bottom, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
             }
+        }
+        .fullScreenCover(isPresented: $showCalendar) {
+            StudyCalendarView()
         }
     }
 
@@ -297,14 +301,14 @@ struct HomeView: View {
     // MARK: - 캘린더 FAB
     private var calendarFAB: some View {
         Button {
-            // 캘린더 (추후 구현)
+            showCalendar = true
         } label: {
             ZStack {
                 Circle()
-                    .fill(AppColor.primary.opacity(0.1))
-                    .frame(width: 52, height: 52)
+                    .fill(AppColor.primary.opacity(0.12))
+                    .frame(width: 60, height: 60)
                 Image(systemName: "calendar")
-                    .font(.system(size: 22))
+                    .font(.system(size: 26))
                     .foregroundColor(AppColor.primary)
             }
         }

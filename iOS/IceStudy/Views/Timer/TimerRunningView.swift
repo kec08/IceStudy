@@ -63,19 +63,20 @@ struct TimerRunningView: View {
 
     private var controlButtons: some View {
         HStack(spacing: 48) {
-            // 달 (화면 잠금 - 추후)
+            // 집중모드 (화면 꺼짐 방지)
             Button {
-                // 화면 잠금 모드 (추후 구현)
+                viewModel.toggleFocusMode()
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color(hex: "E8E8E8"))
+                        .fill(viewModel.isFocusMode ? AppColor.primary : Color(hex: "E8E8E8"))
                         .frame(width: 48, height: 48)
-                    Image(systemName: "moon.fill")
+                    Image(systemName: viewModel.isFocusMode ? "moon.fill" : "moon")
                         .font(.system(size: 18))
-                        .foregroundColor(AppColor.textSecondary)
+                        .foregroundColor(viewModel.isFocusMode ? .white : AppColor.textSecondary)
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: viewModel.isFocusMode)
 
             // 재생 / 일시정지
             Button {

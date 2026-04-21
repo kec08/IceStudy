@@ -42,23 +42,16 @@ struct CupSelectionView: View {
                         viewModel.startTimer(size: cup)
                     }
                 } label: {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         Image(systemName: "play.fill")
-                            .font(.system(size: 20))
+                            .font(.system(size: 24))
                         Text("시작하기")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 26, weight: .bold))
                     }
                     .foregroundColor(selectedCup != nil ? AppColor.primary : AppColor.textTertiary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(selectedCup != nil ? AppColor.primary.opacity(0.1) : Color.clear)
-                    )
                 }
                 .disabled(selectedCup == nil)
-                .padding(.horizontal, 40)
-                .padding(.bottom, 24)
+                .padding(.bottom, 60)
             }
         }
     }

@@ -14,6 +14,7 @@ class TimerViewModel {
     var cupSize: CupSize = .tall
     var timerState: TimerState = .idle
     var elapsedSeconds: Int = 0
+    var isFocusMode: Bool = false
 
     private(set) var totalDuration: Int = 0
     private var timer: AnyCancellable?
@@ -60,6 +61,12 @@ class TimerViewModel {
     func abortTimer() {
         timer?.cancel()
         timerState = .aborted
+        setFocusMode(false)
+    }
+
+    func toggleFocusMode() {
+        isFocusMode.toggle()
+        setFocusMode(isFocusMode)
     }
 
     func reset() {
@@ -67,6 +74,13 @@ class TimerViewModel {
         timerState = .idle
         elapsedSeconds = 0
         totalDuration = 0
+        setFocusMode(false)
+    }
+
+    private func setFocusMode(_ enabled: Bool) {
+        isFocusMode = enabled
+        // 화면 꺼짐 방지
+        UIApplication.shared.isIdleTimerDisabled = enabled
     }
 
     // MARK: - Private

@@ -93,7 +93,7 @@ struct LoginView: View {
                     .padding(.top, 28)
 
                 // 입력 필드
-                VStack(spacing: 20) {
+                VStack(spacing: 40) {
                     StyledInputField(placeholder: "이메일", text: $email)
                     StyledInputField(placeholder: "비밀번호", text: $password, isSecure: true)
                 }

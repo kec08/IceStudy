@@ -14,15 +14,16 @@ struct SignUpView: View {
 
     var body: some View {
         ZStack {
-            AppColor.background
+            Color.white
                 .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
                 // 네비게이션 바
                 ZStack {
-                    Text("얼공")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(AppColor.primary)
+                    Image("LogoText")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 22)
 
                     HStack {
                         Button(action: onBack) {
@@ -38,47 +39,64 @@ struct SignUpView: View {
 
                 // 회원가입 타이틀
                 Text("회원가입")
-                    .font(AppFont.title1())
+                    .font(.system(size: 26, weight: .bold))
                     .foregroundColor(AppColor.textPrimary)
                     .padding(.top, 32)
                     .padding(.horizontal, 24)
+                    .padding(.bottom, 7)
 
                 Text("얼공에 오신 것을 환영합니다")
-                    .font(AppFont.body())
+                    .font(.system(size: 14))
                     .foregroundColor(AppColor.textSecondary)
-                    .padding(.top, 8)
                     .padding(.horizontal, 24)
 
                 // 입력 필드
-                VStack(spacing: 24) {
-                    InputField(placeholder: "닉네임", text: $nickname)
-                    InputField(placeholder: "이메일", text: $email)
-                    InputField(placeholder: "비밀번호 (6자 이상)", text: $password, isSecure: true)
-                    InputField(placeholder: "비밀번호 확인", text: $passwordConfirm, isSecure: true)
-                }
-                .padding(.top, 32)
-                .padding(.horizontal, 24)
+                ScrollView {
+                    VStack(spacing: 40) {
+                        StyledInputField(placeholder: "닉네임", text: $nickname)
+                        StyledInputField(placeholder: "이메일", text: $email)
+                        StyledInputField(placeholder: "비밀번호 (6자 이상)", text: $password, isSecure: true)
+                        StyledInputField(placeholder: "비밀번호 확인", text: $passwordConfirm, isSecure: true)
+                    }
+                    .padding(.top, 32)
+                    .padding(.horizontal, 24)
 
-                // 비밀번호 불일치 경고
-                if !passwordConfirm.isEmpty && password != passwordConfirm {
-                    Text("비밀번호가 일치하지 않습니다")
-                        .font(AppFont.caption())
-                        .foregroundColor(AppColor.danger)
-                        .padding(.top, 8)
-                        .padding(.horizontal, 24)
+                    // 비밀번호 불일치 경고
+                    if !passwordConfirm.isEmpty && password != passwordConfirm {
+                        Text("비밀번호가 일치하지 않습니다")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColor.danger)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 8)
+                            .padding(.horizontal, 24)
+                    }
                 }
 
                 Spacer()
 
+                // 로그인 링크
+                HStack(spacing: 4) {
+                    Text("이미 회원이신가요?")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColor.textSecondary)
+                    Button("로그인") {
+                        onBack()
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(AppColor.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 16)
+
                 // 회원가입 버튼
                 PrimaryButton(title: "회원가입", isEnabled: isFormValid) {
-                    // 회원가입 API 호출 (추후 구현)
                     onBack()
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 40)
             }
         }
+        .preferredColorScheme(.light)
     }
 }
 
