@@ -7,12 +7,13 @@ struct MainTabView: View {
         TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
-                    Image(systemName: "house.fill")
+                    Image("MdiCup")
+                        .renderingMode(.template)
                     Text("양동이")
                 }
                 .tag(0)
 
-            TempIceView()
+            IceTimerFlowView()
                 .tabItem {
                     Image(systemName: "cube.fill")
                     Text("얼음")
@@ -30,26 +31,7 @@ struct MainTabView: View {
     }
 }
 
-// MARK: - 임시 탭 화면들
-struct TempIceView: View {
-    var body: some View {
-        ZStack {
-            AppColor.background.ignoresSafeArea()
-            VStack(spacing: 12) {
-                Image(systemName: "cube.fill")
-                    .font(.system(size: 48))
-                    .foregroundColor(AppColor.primary.opacity(0.3))
-                Text("얼음 타이머")
-                    .font(AppFont.title2())
-                    .foregroundColor(AppColor.textSecondary)
-                Text("추후 구현 예정")
-                    .font(AppFont.callout())
-                    .foregroundColor(AppColor.textTertiary)
-            }
-        }
-    }
-}
-
+// MARK: - 임시 탭 화면
 struct TempProfileView: View {
     var body: some View {
         ZStack {

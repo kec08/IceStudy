@@ -123,8 +123,8 @@ struct HomeView: View {
     // MARK: - 유리 양동이 (디테일)
     private var glassCupSection: some View {
         GeometryReader { geo in
-            let cupWidth = geo.size.width * 0.52
-            let cupHeight = cupWidth * 1.05
+            let cupWidth = geo.size.width * 0.58
+            let cupHeight = cupWidth * 1.08
 
             ZStack {
                 // 1) 컵 바닥 그림자
@@ -143,61 +143,32 @@ struct HomeView: View {
                     .frame(width: cupWidth * 0.7, height: 16)
                     .offset(y: cupHeight * 0.52)
 
-                // 2) 컵 외형 (유리 재질)
+                // 2) 컵 외형 (거의 투명)
                 GlassCupShape()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.25),
-                                Color(hex: "D8F0FF").opacity(0.12),
-                                Color(hex: "B0DFFA").opacity(0.08),
-                                Color.white.opacity(0.15)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color(hex: "D8F0FF").opacity(0.04))
                     .frame(width: cupWidth, height: cupHeight)
 
                 // 3) 물 채움
-                GlassCupShape()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                AppColor.primary.opacity(0.12),
-                                AppColor.primary.opacity(0.22),
-                                AppColor.primary.opacity(0.30)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(width: cupWidth, height: cupHeight)
-                    .mask(
-                        VStack(spacing: 0) {
-                            Spacer(minLength: 0)
-                            Rectangle()
-                                .frame(height: cupHeight * fillRatio)
-                        }
-                        .frame(height: cupHeight)
-                    )
-
-                // 4) 물 표면 하이라이트
-                if fillRatio > 0.05 {
-                    Ellipse()
+                if fillRatio > 0 {
+                    GlassCupShape()
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    AppColor.primary.opacity(0.08),
                                     AppColor.primary.opacity(0.18),
-                                    AppColor.primary.opacity(0.08)
+                                    AppColor.primary.opacity(0.26),
+                                    AppColor.primary.opacity(0.32)
                                 ],
-                                startPoint: .leading,
-                                endPoint: .trailing
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
                         )
-                        .frame(width: cupWidth * waterSurfaceWidth, height: 10)
-                        .offset(y: cupHeight * 0.5 - cupHeight * fillRatio)
+                        .frame(width: cupWidth, height: cupHeight)
+                        .mask(
+                            Rectangle()
+                                .frame(height: cupHeight)
+                                .frame(height: cupHeight, alignment: .bottom)
+                                .offset(y: cupHeight * (1.0 - fillRatio))
+                        )
                 }
 
                 // 5) 컵 외곽선 (유리 테두리)
@@ -280,12 +251,6 @@ struct HomeView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(height: 340)
-    }
-
-    // 물 표면 넓이 (컵 모양에 따라 위쪽이 넓음)
-    private var waterSurfaceWidth: CGFloat {
-        let t = 1.0 - fillRatio // 위에서부터의 비율
-        return 0.55 + (0.35 * t) // 위쪽일수록 넓음
     }
 
     // MARK: - 하단 통계

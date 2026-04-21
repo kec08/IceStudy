@@ -24,37 +24,38 @@ struct LoginView: View {
 
     private var loginContent: some View {
         ZStack {
-            AppColor.background
+            Color.white
                 .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
                 // 네비게이션 바
                 HStack {
                     Spacer()
-                    Text("얼공")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(AppColor.primary)
+                    Image("LogoText")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 22)
                     Spacer()
                 }
                 .padding(.top, 16)
 
                 // 로그인 타이틀
                 Text("로그인")
-                    .font(AppFont.title1())
+                    .font(.system(size: 26, weight: .bold))
                     .foregroundColor(AppColor.textPrimary)
                     .padding(.top, 32)
                     .padding(.horizontal, 24)
+                    .padding(.bottom, 7)
 
                 // 설명
                 VStack(alignment: .leading, spacing: 4) {
                     Text("간편하게 애플계정으로 로그인하여")
-                        .font(AppFont.body())
-                        .foregroundColor(AppColor.textPrimary)
-                    Text("빠르게 서비스 서비스를 이용해보세요.")
-                        .font(AppFont.body())
-                        .foregroundColor(AppColor.textPrimary)
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColor.textSecondary)
+                    Text("빠르게 서비스를 이용해보세요.")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColor.textSecondary)
                 }
-                .padding(.top, 12)
                 .padding(.horizontal, 24)
 
                 // Apple 로그인 버튼
@@ -80,20 +81,21 @@ struct LoginView: View {
 
                 // 구분선
                 Divider()
+                    .background(Color(hex: "E0E0E0"))
                     .padding(.horizontal, 80)
                     .padding(.top, 28)
 
                 // 로그인 소제목
                 Text("로그인")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppColor.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 28)
 
                 // 입력 필드
-                VStack(spacing: 24) {
-                    InputField(placeholder: "이메일", text: $email)
-                    InputField(placeholder: "비밀번호", text: $password, isSecure: true)
+                VStack(spacing: 20) {
+                    StyledInputField(placeholder: "이메일", text: $email)
+                    StyledInputField(placeholder: "비밀번호", text: $password, isSecure: true)
                 }
                 .padding(.top, 24)
                 .padding(.horizontal, 24)
@@ -103,14 +105,14 @@ struct LoginView: View {
                 // 회원가입 링크
                 HStack(spacing: 4) {
                     Text("아직 회원이 아니신가요?")
-                        .font(AppFont.callout())
+                        .font(.system(size: 14))
                         .foregroundColor(AppColor.textSecondary)
                     Button("회원가입") {
                         withAnimation {
                             navigateToSignUp = true
                         }
                     }
-                    .font(AppFont.callout())
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AppColor.primary)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -126,14 +128,16 @@ struct LoginView: View {
                 .padding(.bottom, 40)
             }
         }
+        .preferredColorScheme(.light)
     }
 }
 
-// MARK: - 입력 필드 컴포넌트
-struct InputField: View {
+// MARK: - 입력 필드 (포커스 감지 + 다크모드 대응)
+struct StyledInputField: View {
     let placeholder: String
     @Binding var text: String
     var isSecure: Bool = false
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -141,17 +145,22 @@ struct InputField: View {
                 SecureField(placeholder, text: $text)
                     .font(AppFont.body())
                     .foregroundColor(AppColor.textPrimary)
+                    .focused($isFocused)
+                    .tint(AppColor.primary)
             } else {
                 TextField(placeholder, text: $text)
                     .font(AppFont.body())
                     .foregroundColor(AppColor.textPrimary)
+                    .focused($isFocused)
                     .autocapitalization(.none)
                     .keyboardType(.emailAddress)
+                    .tint(AppColor.primary)
             }
 
             Rectangle()
-                .frame(height: 1)
-                .foregroundColor(Color(hex: "E0E0E0"))
+                .frame(height: isFocused ? 2 : 1)
+                .foregroundColor(isFocused ? AppColor.primary : Color(hex: "E0E0E0"))
+                .animation(.easeInOut(duration: 0.2), value: isFocused)
         }
     }
 }

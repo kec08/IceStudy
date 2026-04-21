@@ -1,0 +1,114 @@
+import SwiftUI
+import Combine
+
+enum TimerState: Sendable, Equatable {
+    case idle
+    case running
+    case paused
+    case completed
+    case aborted
+}
+
+@Observable
+class TimerViewModel {
+    var cupSize: CupSize = .tall
+    var timerState: TimerState = .idle
+    var elapsedSeconds: Int = 0
+
+    private(set) var totalDuration: Int = 0
+    private var timer: AnyCancellable?
+    private var backgroundDate: Date?
+
+    // MARK: - Computed
+    var progress: CGFloat {
+        guard totalDuration > 0 else { return 0 }
+        return min(CGFloat(elapsedSeconds) / CGFloat(totalDuration), 1.0)
+    }
+
+    var waterML: Double {
+        Double(progress) * cupSize.maxML
+    }
+
+    var elapsedHours: Int {
+        elapsedSeconds / 3600
+    }
+
+    var elapsedMinutes: Int {
+        (elapsedSeconds % 3600) / 60
+    }
+
+    // MARK: - Actions
+    func startTimer(size: CupSize) {
+        cupSize = size
+        totalDuration = size.randomDuration()
+        elapsedSeconds = 0
+        timerState = .running
+        setupTimer()
+        observeBackground()
+    }
+
+    func pauseTimer() {
+        timerState = .paused
+        timer?.cancel()
+    }
+
+    func resumeTimer() {
+        timerState = .running
+        setupTimer()
+    }
+
+    func abortTimer() {
+        timer?.cancel()
+        timerState = .aborted
+    }
+
+    func reset() {
+        timer?.cancel()
+        timerState = .idle
+        elapsedSeconds = 0
+        totalDuration = 0
+    }
+
+    // MARK: - Private
+    private func setupTimer() {
+        timer?.cancel()
+        timer = Timer.publish(every: 1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                guard let self, self.timerState == .running else { return }
+                self.elapsedSeconds += 1
+                if self.elapsedSeconds >= self.totalDuration {
+                    self.timer?.cancel()
+                    self.timerState = .completed
+                }
+            }
+    }
+
+    private func observeBackground() {
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willResignActiveNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self, self.timerState == .running else { return }
+            self.backgroundDate = Date()
+            self.timer?.cancel()
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self, let bg = self.backgroundDate else { return }
+            let diff = Int(Date().timeIntervalSince(bg))
+            self.elapsedSeconds += diff
+            self.backgroundDate = nil
+
+            if self.elapsedSeconds >= self.totalDuration {
+                self.elapsedSeconds = self.totalDuration
+                self.timerState = .completed
+            } else if self.timerState == .running {
+                self.setupTimer()
+            }
+        }
+    }
+}
