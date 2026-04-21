@@ -110,6 +110,7 @@ struct TimerRunningView: View {
                 }
             }
         }
+        .padding(.bottom, 24)
     }
 }
 

@@ -44,12 +44,11 @@ struct ProfileView: View {
 
                     // 로그아웃
                     logoutButton
-                        .padding(.top, 60)
+                        .padding(.top, 80)
                         .padding(.bottom, 100)
                 }
             }
         }
-        .preferredColorScheme(.light)
     }
 
     // MARK: - 네비바

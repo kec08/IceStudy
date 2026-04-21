@@ -96,7 +96,6 @@ struct SignUpView: View {
                 .padding(.bottom, 40)
             }
         }
-        .preferredColorScheme(.light)
     }
 }
 

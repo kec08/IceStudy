@@ -6,12 +6,12 @@ struct LogoHeaderView: View {
             Image("IceCube")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 28, height: 28)
+                .frame(width: 34, height: 34)
 
             Image("LogoText")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 22)
+                .frame(height: 28)
         }
     }
 }

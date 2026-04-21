@@ -24,7 +24,7 @@ struct CupSelectionView: View {
                 Text("얼음컵을 선택해주세요")
                     .font(AppFont.title2())
                     .foregroundColor(AppColor.primary)
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 40)
 
                 // 컵 3개
                 HStack(spacing: 12) {
@@ -51,7 +51,7 @@ struct CupSelectionView: View {
                     .foregroundColor(selectedCup != nil ? AppColor.primary : AppColor.textTertiary)
                 }
                 .disabled(selectedCup == nil)
-                .padding(.bottom, 60)
+                .padding(.bottom, 80)
             }
         }
     }

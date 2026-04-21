@@ -85,7 +85,6 @@ struct StudyCalendarView: View {
                 }
             }
         }
-        .preferredColorScheme(.light)
     }
 
     // MARK: - 요일 헤더
@@ -197,9 +196,15 @@ struct StudyCalendarView: View {
         }
         guard let data, !isFuture else { return Color.clear }
 
-        // 공부량에 따라 색상 농도 (차이 크게)
-        let intensity = min(Double(data.minutes) / 180.0, 1.0) // 3시간 기준
-        return AppColor.primary.opacity(0.05 + intensity * 0.25)
+        // 공부량에 따라 색상 농도 (기본 연하게, 3~4시간 넘으면 진하게)
+        let minutes = Double(data.minutes)
+        if minutes >= 180 { // 3시간 이상
+            let extra = min((minutes - 180) / 60.0, 1.0) // 3~4시간 사이 0→1
+            return AppColor.primary.opacity(0.12 + extra * 0.10)
+        } else {
+            let intensity = minutes / 180.0
+            return AppColor.primary.opacity(0.03 + intensity * 0.08)
+        }
     }
 }
 

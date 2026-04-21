@@ -27,11 +27,11 @@ struct OnboardingView: View {
                     // 설명 텍스트
                     VStack(alignment: .leading, spacing: 4) {
                         Text("언제 녹을지 모르는 얼음")
-                            .font(AppFont.body())
+                            .font(AppFont.headline())
                             .foregroundColor(AppColor.textPrimary)
 
                         Text("전부 녹을 때까지 집중해보세요")
-                            .font(AppFont.body())
+                            .font(AppFont.headline())
                             .foregroundColor(AppColor.textPrimary)
                     }
                     .padding(.top, 12)
@@ -39,15 +39,9 @@ struct OnboardingView: View {
 
                     Spacer()
 
-                    // 중앙 얼음 컵 이미지
-                    HStack {
-                        Spacer()
-                        Image("IceCube")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geo.size.width * 0.6)
-                        Spacer()
-                    }
+                    // 중앙 얼음컵
+                    IceMeltingView(progress: 0.0)
+                        .frame(height: geo.size.height * 0.4)
 
                     Spacer()
 

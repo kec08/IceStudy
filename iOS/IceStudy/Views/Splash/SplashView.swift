@@ -36,14 +36,14 @@ struct SplashView: View {
                 Image("IceCube")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 120, height: 120)
+                    .frame(width: 200, height: 200)
                     .scaleEffect(isAnimating ? 1.0 : 0.8)
                     .opacity(isAnimating ? 1.0 : 0.0)
 
                 Image("LogoText")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 36)
+                    .frame(height: 56)
                     .scaleEffect(isAnimating ? 1.0 : 0.8)
                     .opacity(isAnimating ? 1.0 : 0.0)
             }

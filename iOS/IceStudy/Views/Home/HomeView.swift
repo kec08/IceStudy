@@ -3,12 +3,22 @@ import SwiftUI
 struct HomeView: View {
     @State private var weekOffset: Int = 0
     @State private var showCalendar = false
+    @State private var slideDirection: Edge = .leading
 
-    // 임시 데이터
-    private let filledML: Int = 1800
-    private let goalML: Int = 3000
-    private let totalHours: Int = 5
-    private let totalMinutes: Int = 3
+    // 주간별 임시 데이터 (weekOffset 기반)
+    private var weekData: (filledML: Int, goalML: Int, totalMinutes: Int) {
+        // 해시 기반으로 주마다 다른 데이터
+        let seed = abs(weekOffset * 7 + 42)
+        let base = weekOffset == 0 ? 1800 : (800 + (seed * 137) % 2200)
+        let goal = 3000
+        let minutes = Int(Double(base) / 355.0 * 60.0)
+        return (base, goal, minutes)
+    }
+
+    private var filledML: Int { weekData.filledML }
+    private var goalML: Int { weekData.goalML }
+    private var totalHours: Int { weekData.totalMinutes / 60 }
+    private var totalMinutes: Int { weekData.totalMinutes % 60 }
 
     private var fillRatio: CGFloat {
         min(CGFloat(filledML) / CGFloat(goalML), 1.0)
@@ -38,25 +48,21 @@ struct HomeView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
+                .padding(.top, -4)
+                .padding(.bottom, 30)
 
                 // 주간 네비게이션
                 weekNavigator
-                    .padding(.top, 20)
+                    .padding(.top, 14)
 
-                // 채운 물양
-                waterAmountSection
-                    .padding(.top, 20)
-
-                // 양동이 (유리컵)
-                glassCupSection
-                    .padding(.top, 8)
-
-                Spacer(minLength: 4)
-
-                // 하단 통계
-                bottomStats
-                    .padding(.horizontal, 24)
+                // 주간 콘텐츠 (슬라이드 전환)
+                weekContent
+                    .id(weekOffset)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: slideDirection),
+                        removal: .move(edge: slideDirection == .leading ? .trailing : .leading)
+                    ))
+                    .animation(.easeInOut(duration: 0.3), value: weekOffset)
 
                 // 캘린더 FAB
                 HStack {
@@ -64,7 +70,7 @@ struct HomeView: View {
                     calendarFAB
                         .padding(.trailing, 24)
                 }
-                .padding(.top, 8)
+                .padding(.top, 16)
                 .padding(.bottom, 12)
             }
         }
@@ -73,11 +79,32 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - 주간 콘텐츠
+    private var weekContent: some View {
+        VStack(spacing: 0) {
+            // 채운 물양
+            waterAmountSection
+                .padding(.top, 12)
+
+            // 양동이 (유리컵)
+            glassCupSection
+                .padding(.top, 0)
+
+            // 하단 통계
+            bottomStats
+                .padding(.horizontal, 24)
+                .padding(.top, -4)
+        }
+    }
+
     // MARK: - 주간 네비게이터
     private var weekNavigator: some View {
         HStack {
             Button {
-                weekOffset -= 1
+                slideDirection = .leading
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    weekOffset -= 1
+                }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .medium))
@@ -94,7 +121,10 @@ struct HomeView: View {
 
             Button {
                 if weekOffset < 0 {
-                    weekOffset += 1
+                    slideDirection = .trailing
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        weekOffset += 1
+                    }
                 }
             } label: {
                 Image(systemName: "chevron.right")
@@ -103,12 +133,13 @@ struct HomeView: View {
             }
             .disabled(weekOffset >= 0)
         }
+        .padding(.bottom, 14)
         .padding(.horizontal, 24)
     }
 
     // MARK: - 채운 물양 섹션
     private var waterAmountSection: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 8) {
             Text("채운 물양")
                 .font(AppFont.headline())
                 .foregroundColor(AppColor.textPrimary)
@@ -147,7 +178,7 @@ struct HomeView: View {
                     .frame(width: cupWidth * 0.7, height: 16)
                     .offset(y: cupHeight * 0.52)
 
-                // 2) 컵 외형 (거의 투명)
+                // 2) 컵 외형
                 GlassCupShape()
                     .fill(Color(hex: "D8F0FF").opacity(0.04))
                     .frame(width: cupWidth, height: cupHeight)
@@ -175,7 +206,7 @@ struct HomeView: View {
                         )
                 }
 
-                // 5) 컵 외곽선 (유리 테두리)
+                // 4) 컵 외곽선 (유리 테두리)
                 GlassCupShape()
                     .stroke(
                         LinearGradient(
@@ -191,7 +222,7 @@ struct HomeView: View {
                     )
                     .frame(width: cupWidth, height: cupHeight)
 
-                // 6) 유리 반사 하이라이트 (좌측)
+                // 5) 유리 반사 하이라이트 (좌측)
                 GlassCupShape()
                     .fill(
                         LinearGradient(
@@ -213,7 +244,7 @@ struct HomeView: View {
                         .frame(width: cupWidth)
                     )
 
-                // 7) 우측 엣지 반사
+                // 6) 우측 엣지 반사
                 GlassCupShape()
                     .stroke(
                         LinearGradient(
@@ -237,7 +268,7 @@ struct HomeView: View {
                         .frame(width: cupWidth)
                     )
 
-                // 8) 바닥 두께감
+                // 7) 바닥 두께감
                 Ellipse()
                     .fill(
                         LinearGradient(
@@ -276,7 +307,7 @@ struct HomeView: View {
             .frame(maxWidth: .infinity)
 
             VStack(spacing: 4) {
-                Text("총 공부 시간")
+                Text("이번주 공부 시간")
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textPrimary)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -312,60 +343,6 @@ struct HomeView: View {
                     .foregroundColor(AppColor.primary)
             }
         }
-    }
-}
-
-// MARK: - 유리컵 Shape (위가 넓고 아래가 좁은 실제 컵 형태)
-struct GlassCupShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-
-        let topInset: CGFloat = rect.width * 0.02
-        let bottomInset: CGFloat = rect.width * 0.14
-        let cornerRadius: CGFloat = rect.width * 0.08
-        let bottomCorner: CGFloat = rect.width * 0.10
-
-        // 시작: 좌상단
-        path.move(to: CGPoint(x: topInset + cornerRadius, y: 0))
-
-        // 상단 직선
-        path.addLine(to: CGPoint(x: rect.width - topInset - cornerRadius, y: 0))
-
-        // 우상단 코너
-        path.addQuadCurve(
-            to: CGPoint(x: rect.width - topInset, y: cornerRadius),
-            control: CGPoint(x: rect.width - topInset, y: 0)
-        )
-
-        // 우측 라인 (안쪽으로 좁아짐)
-        path.addLine(to: CGPoint(x: rect.width - bottomInset, y: rect.height - bottomCorner))
-
-        // 우하단 코너
-        path.addQuadCurve(
-            to: CGPoint(x: rect.width - bottomInset - bottomCorner, y: rect.height),
-            control: CGPoint(x: rect.width - bottomInset, y: rect.height)
-        )
-
-        // 하단 직선
-        path.addLine(to: CGPoint(x: bottomInset + bottomCorner, y: rect.height))
-
-        // 좌하단 코너
-        path.addQuadCurve(
-            to: CGPoint(x: bottomInset, y: rect.height - bottomCorner),
-            control: CGPoint(x: bottomInset, y: rect.height)
-        )
-
-        // 좌측 라인 (위로 넓어짐)
-        path.addLine(to: CGPoint(x: topInset, y: cornerRadius))
-
-        // 좌상단 코너
-        path.addQuadCurve(
-            to: CGPoint(x: topInset + cornerRadius, y: 0),
-            control: CGPoint(x: topInset, y: 0)
-        )
-
-        path.closeSubpath()
-        return path
     }
 }
 

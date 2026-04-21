@@ -128,7 +128,6 @@ struct LoginView: View {
                 .padding(.bottom, 40)
             }
         }
-        .preferredColorScheme(.light)
     }
 }
 
@@ -162,6 +161,7 @@ struct StyledInputField: View {
                 .foregroundColor(isFocused ? AppColor.primary : Color(hex: "E0E0E0"))
                 .animation(.easeInOut(duration: 0.2), value: isFocused)
         }
+        .environment(\.colorScheme, .light)
     }
 }
 
