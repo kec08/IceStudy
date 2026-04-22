@@ -22,11 +22,14 @@ public class User {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(length = 255)
     private String password;
 
     @Column(nullable = false, length = 50)
     private String nickname;
+
+    @Column(unique = true)
+    private String appleId;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -37,5 +40,9 @@ public class User {
 
     public void updateNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public void linkAppleId(String appleId) {
+        this.appleId = appleId;
     }
 }

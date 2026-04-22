@@ -28,6 +28,10 @@ public class BusinessException extends RuntimeException {
         return new BusinessException("AUTH_003", "토큰이 만료되었거나 유효하지 않습니다", HttpStatus.UNAUTHORIZED);
     }
 
+    public static BusinessException appleAuthFailed() {
+        return new BusinessException("AUTH_004", "Apple 인증에 실패했습니다", HttpStatus.UNAUTHORIZED);
+    }
+
     // Session
     public static BusinessException sessionNotFound() {
         return new BusinessException("SESSION_001", "세션을 찾을 수 없습니다", HttpStatus.NOT_FOUND);

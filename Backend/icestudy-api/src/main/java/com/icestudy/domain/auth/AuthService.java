@@ -21,6 +21,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
+    private final AppleTokenVerifier appleTokenVerifier;
 
     @Transactional
     public SignUpResponse signup(SignUpRequest request) {
@@ -56,6 +57,50 @@ public class AuthService {
         String refreshToken = jwtProvider.generateRefreshToken(user.getId(), user.getEmail());
 
         // 기존 리프레시 토큰 삭제 후 새로 저장
+        refreshTokenRepository.deleteByUser(user);
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(user)
+                .token(refreshToken)
+                .expiresAt(LocalDateTime.now().plusSeconds(jwtProvider.getRefreshExpiration() / 1000))
+                .build());
+
+        return TokenResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .userId(user.getId())
+                .nickname(user.getNickname())
+                .build();
+    }
+
+    @Transactional
+    public TokenResponse appleLogin(AppleLoginRequest request) {
+        // Apple identityToken 검증 → Apple 유저 고유 ID(sub) 획득
+        String appleId = appleTokenVerifier.verifyAndGetSubject(request.getIdentityToken());
+
+        // 기존 유저 조회 또는 신규 생성
+        User user = userRepository.findByAppleId(appleId)
+                .orElseGet(() -> {
+                    String email = (request.getEmail() != null) ? request.getEmail() : appleId + "@apple.icestudy";
+                    String nickname = (request.getNickname() != null) ? request.getNickname() : "유저";
+
+                    // 이미 같은 이메일로 가입한 유저가 있으면 appleId 연결
+                    return userRepository.findByEmail(email)
+                            .map(existing -> {
+                                existing.linkAppleId(appleId);
+                                return existing;
+                            })
+                            .orElseGet(() -> userRepository.save(User.builder()
+                                    .email(email)
+                                    .password("")
+                                    .nickname(nickname)
+                                    .appleId(appleId)
+                                    .build()));
+                });
+
+        // JWT 토큰 발급
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getEmail());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId(), user.getEmail());
+
         refreshTokenRepository.deleteByUser(user);
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)

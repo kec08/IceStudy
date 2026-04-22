@@ -35,6 +35,13 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @Operation(summary = "Apple 로그인")
+    @PostMapping("/apple")
+    public ResponseEntity<ApiResponse<TokenResponse>> appleLogin(@Valid @RequestBody AppleLoginRequest request) {
+        TokenResponse response = authService.appleLogin(request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @Operation(summary = "토큰 갱신")
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<TokenResponse>> refresh(@Valid @RequestBody RefreshRequest request) {
