@@ -74,23 +74,28 @@ public class AuthService {
 
     @Transactional
     public TokenResponse appleLogin(AppleLoginRequest request) {
-        // Apple identityToken 검증 → Apple 유저 고유 ID(sub) 획득
-        String appleId = appleTokenVerifier.verifyAndGetSubject(request.getIdentityToken());
+        // Apple identityToken 검증 → Apple 유저 고유 ID(sub) + email 획득
+        AppleTokenVerifier.AppleTokenInfo tokenInfo = appleTokenVerifier.verifyAndGetInfo(request.getIdentityToken());
+        String appleId = tokenInfo.subject();
+
+        // email 우선순위: 클라이언트 전달값 > JWT에서 추출한 값 > 기본값
+        String resolvedEmail = (request.getEmail() != null) ? request.getEmail()
+                : (tokenInfo.email() != null) ? tokenInfo.email()
+                : appleId + "@apple.icestudy";
 
         // 기존 유저 조회 또는 신규 생성
         User user = userRepository.findByAppleId(appleId)
                 .orElseGet(() -> {
-                    String email = (request.getEmail() != null) ? request.getEmail() : appleId + "@apple.icestudy";
                     String nickname = (request.getNickname() != null) ? request.getNickname() : "유저";
 
                     // 이미 같은 이메일로 가입한 유저가 있으면 appleId 연결
-                    return userRepository.findByEmail(email)
+                    return userRepository.findByEmail(resolvedEmail)
                             .map(existing -> {
                                 existing.linkAppleId(appleId);
                                 return existing;
                             })
                             .orElseGet(() -> userRepository.save(User.builder()
-                                    .email(email)
+                                    .email(resolvedEmail)
                                     .password("")
                                     .nickname(nickname)
                                     .appleId(appleId)

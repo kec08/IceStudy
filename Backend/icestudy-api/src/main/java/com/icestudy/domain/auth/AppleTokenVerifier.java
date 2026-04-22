@@ -26,10 +26,12 @@ public class AppleTokenVerifier {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
+    public record AppleTokenInfo(String subject, String email) {}
+
     /**
-     * Apple identityToken(JWT)을 검증하고 subject(Apple 유저 ID)를 반환
+     * Apple identityToken(JWT)을 검증하고 subject + email을 반환
      */
-    public String verifyAndGetSubject(String identityToken) {
+    public AppleTokenInfo verifyAndGetInfo(String identityToken) {
         try {
             String[] parts = identityToken.split("\\.");
             if (parts.length != 3) {
@@ -72,8 +74,10 @@ public class AppleTokenVerifier {
                 throw new IllegalArgumentException("Invalid signature");
             }
 
-            // 4. subject(Apple 유저 고유 ID) 반환
-            return payload.get("sub").asText();
+            // 4. subject + email 반환
+            String subject = payload.get("sub").asText();
+            String email = payload.has("email") ? payload.get("email").asText() : null;
+            return new AppleTokenInfo(subject, email);
 
         } catch (Exception e) {
             throw new BusinessException("AUTH_004", "Apple 인증에 실패했습니다: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
