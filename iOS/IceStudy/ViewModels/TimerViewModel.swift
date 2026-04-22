@@ -48,6 +48,9 @@ class TimerViewModel {
         setupTimer()
         observeBackground()
 
+        // 타이머 완료 알림 예약 (백그라운드에서도 알림)
+        NotificationManager.scheduleTimerCompleteNotification(after: totalDuration)
+
         // 서버에 세션 생성
         Task {
             do {
@@ -78,12 +81,18 @@ class TimerViewModel {
         timer?.cancel()
         timerState = .aborted
         setFocusMode(false)
+        NotificationManager.cancelTimerNotification()
 
         // 서버에 세션 포기 전송
-        guard let sessionId = currentSessionId else { return }
         let elapsed = elapsedSeconds
         let water = waterML
         Task {
+            var retries = 0
+            while currentSessionId == nil && retries < 10 {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                retries += 1
+            }
+            guard let sessionId = currentSessionId else { return }
             do {
                 _ = try await SessionService.shared.abortSession(
                     id: sessionId,
@@ -108,6 +117,7 @@ class TimerViewModel {
         totalDuration = 0
         currentSessionId = nil
         setFocusMode(false)
+        NotificationManager.cancelTimerNotification()
     }
 
     private func setFocusMode(_ enabled: Bool) {
@@ -126,16 +136,27 @@ class TimerViewModel {
                 if self.elapsedSeconds >= self.totalDuration {
                     self.timer?.cancel()
                     self.timerState = .completed
+                    self.setFocusMode(false)
+                    NotificationManager.cancelTimerNotification()
                     self.sendComplete()
                 }
             }
     }
 
     private func sendComplete() {
-        guard let sessionId = currentSessionId else { return }
         let elapsed = elapsedSeconds
         let water = waterML
         Task {
+            // 세션 ID가 아직 없으면 최대 5초 대기
+            var retries = 0
+            while currentSessionId == nil && retries < 10 {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                retries += 1
+            }
+            guard let sessionId = currentSessionId else {
+                print("세션 ID를 받지 못해 완료 전송 실패")
+                return
+            }
             do {
                 _ = try await SessionService.shared.completeSession(
                     id: sessionId,

@@ -3,6 +3,8 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AuthViewModel.self) private var authViewModel
 
+    @State private var showLogoutAlert = false
+
     // 서버 데이터
     @State private var nickname = ""
     @State private var email = ""
@@ -73,23 +75,11 @@ struct ProfileView: View {
 
     // MARK: - 네비바
     private var navBar: some View {
-        ZStack {
-            Text("마이")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(AppColor.textPrimary)
-
-            HStack {
-                Spacer()
-                Button {
-                    // 설정 (추후)
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 20))
-                        .foregroundColor(AppColor.textPrimary)
-                }
-            }
-        }
-        .padding(.horizontal, 24)
+        Text("마이")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundColor(AppColor.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.horizontal, 24)
     }
 
     // MARK: - 프로필
@@ -108,7 +98,7 @@ struct ProfileView: View {
                 Text(nickname)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(AppColor.textPrimary)
-                Text(email)
+                Text(email.hasSuffix("@apple.icestudy") ? "Apple로 로그인" : email)
                     .font(.system(size: 13))
                     .foregroundColor(AppColor.textSecondary)
             }
@@ -217,13 +207,21 @@ struct ProfileView: View {
     // MARK: - 로그아웃
     private var logoutButton: some View {
         Button {
-            authViewModel.logout()
+            showLogoutAlert = true
         } label: {
             Text("로그아웃")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(AppColor.danger)
+                .foregroundColor(.red)
         }
         .frame(maxWidth: .infinity, alignment: .center)
+        .alert("로그아웃", isPresented: $showLogoutAlert) {
+            Button("취소", role: .cancel) {}
+            Button("로그아웃", role: .destructive) {
+                authViewModel.logout()
+            }
+        } message: {
+            Text("정말 로그아웃 하시겠습니까?")
+        }
     }
 }
 

@@ -21,7 +21,7 @@ enum CupSize: String, CaseIterable {
         }
     }
 
-    /// 랜덤 타이머 범위 (초) - 테스트용 임시 값
+    /// 랜덤 타이머 범위 (초)
     var durationRange: ClosedRange<Int> {
         switch self {
         case .tall: 1800...5400       // 30분 ~ 1시간30분

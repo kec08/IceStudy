@@ -46,7 +46,7 @@ struct ProfileStatsResponse: Decodable {
 
 // MARK: - User
 struct UserResponse: Decodable {
-    let id: Int
+    let userId: Int
     let email: String
     let nickname: String
     let createdAt: String?

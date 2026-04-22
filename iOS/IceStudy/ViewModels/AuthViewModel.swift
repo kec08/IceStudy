@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 @Observable
 class AuthViewModel {
@@ -6,10 +7,62 @@ class AuthViewModel {
     var isLoading: Bool = false
     var errorMessage: String?
     var nickname: String = ""
+    var needsNicknameSetup: Bool = false
 
     init() {
         isLoggedIn = TokenStorage.isLoggedIn
         nickname = TokenStorage.nickname ?? ""
+    }
+
+    // MARK: - Apple 로그인
+    func handleAppleSignIn(result: Result<ASAuthorization, Error>) async {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let identityTokenData = credential.identityToken,
+                  let identityToken = String(data: identityTokenData, encoding: .utf8) else {
+                await MainActor.run {
+                    errorMessage = "Apple 인증 정보를 가져올 수 없습니다"
+                }
+                return
+            }
+
+            let fullName = [credential.fullName?.familyName, credential.fullName?.givenName]
+                .compactMap { $0 }
+                .joined()
+            let appleNickname = fullName.isEmpty ? nil : fullName
+            let appleEmail = credential.email
+
+            isLoading = true
+            errorMessage = nil
+            do {
+                let response = try await AuthService.shared.appleLogin(
+                    identityToken: identityToken,
+                    nickname: appleNickname,
+                    email: appleEmail
+                )
+                await MainActor.run {
+                    nickname = response.nickname
+                    if response.nickname == "유저" {
+                        needsNicknameSetup = true
+                    }
+                    isLoggedIn = true
+                    isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                }
+            }
+
+        case .failure(let error):
+            // 사용자가 취소한 경우는 에러 표시 안함
+            if (error as? ASAuthorizationError)?.code == .canceled { return }
+            await MainActor.run {
+                errorMessage = "Apple 로그인 실패: \(error.localizedDescription)"
+            }
+        }
     }
 
     // MARK: - 로그인

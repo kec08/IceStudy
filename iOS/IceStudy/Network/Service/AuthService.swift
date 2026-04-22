@@ -38,6 +38,22 @@ final class AuthService {
         }
     }
 
+    func appleLogin(identityToken: String, nickname: String?, email: String?) async throws -> TokenResponse {
+        let result = await provider.requestAsync(.appleLogin(identityToken: identityToken, nickname: nickname, email: email))
+        switch result {
+        case .success(let response):
+            let api = try JSONDecoder().decode(ApiResponse<TokenResponse>.self, from: response.data)
+            guard api.success, let data = api.data else {
+                throw APIError.server(api.error?.code ?? "UNKNOWN", api.error?.message ?? "Apple 로그인 실패")
+            }
+            TokenStorage.save(from: data, email: email)
+            return data
+
+        case .failure(let error):
+            throw error
+        }
+    }
+
     func refreshTokens() async throws -> TokenResponse {
         guard let refresh = TokenStorage.refreshToken else {
             throw APIError.noRefreshToken

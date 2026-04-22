@@ -101,8 +101,9 @@ struct WeeklyChartView: View {
                                     .fill(
                                         LinearGradient(
                                             colors: [
-                                                AppColor.primary.opacity(isSelected ? 0.9 : 0.6),
-                                                AppColor.primary.opacity(isSelected ? 0.7 : 0.35)
+                                                AppColor.primary.opacity(isSelected ? 0.25 : 0.15),
+                                                AppColor.primary.opacity(isSelected ? 0.6 : 0.4),
+                                                AppColor.primary.opacity(isSelected ? 0.9 : 0.7)
                                             ],
                                             startPoint: .top,
                                             endPoint: .bottom

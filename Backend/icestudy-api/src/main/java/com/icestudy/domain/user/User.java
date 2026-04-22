@@ -45,4 +45,8 @@ public class User {
     public void linkAppleId(String appleId) {
         this.appleId = appleId;
     }
+
+    public void updateEmail(String email) {
+        this.email = email;
+    }
 }

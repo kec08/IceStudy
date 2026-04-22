@@ -2,19 +2,10 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(AuthViewModel.self) private var authViewModel
-    @State private var navigateToLogin = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    var onFinish: () -> Void
 
     var body: some View {
-        if navigateToLogin {
-            LoginView()
-                .environment(authViewModel)
-        } else {
-            onboardingContent
-        }
-    }
-
-    private var onboardingContent: some View {
         GeometryReader { geo in
             ZStack {
                 AppColor.background
@@ -50,9 +41,7 @@ struct OnboardingView: View {
                     // 하단 시작하기 버튼
                     PrimaryButton(title: "시작하기") {
                         hasSeenOnboarding = true
-                        withAnimation {
-                            navigateToLogin = true
-                        }
+                        onFinish()
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 40)
@@ -63,6 +52,6 @@ struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView()
+    OnboardingView(onFinish: {})
         .environment(AuthViewModel())
 }

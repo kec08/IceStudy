@@ -1,26 +1,36 @@
 import SwiftUI
+import AuthenticationServices
 
 struct LoginView: View {
     @Environment(AuthViewModel.self) private var authViewModel
     @State private var email = ""
     @State private var password = ""
-    @State private var navigateToSignUp = false
+    @State private var showSignUp = false
+    var onLoginSuccess: (() -> Void)?
 
     private var isFormValid: Bool {
         !email.isEmpty && !password.isEmpty
     }
 
     var body: some View {
-        if authViewModel.isLoggedIn {
-            MainTabView()
-                .environment(authViewModel)
-        } else if navigateToSignUp {
-            SignUpView(onBack: {
-                navigateToSignUp = false
-            })
-            .environment(authViewModel)
-        } else {
+        ZStack {
             loginContent
+
+            if showSignUp {
+                SignUpView(onBack: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showSignUp = false
+                    }
+                })
+                .environment(authViewModel)
+                .transition(.move(edge: .trailing))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: showSignUp)
+        .onChange(of: authViewModel.isLoggedIn) { _, isLoggedIn in
+            if isLoggedIn {
+                onLoginSuccess?()
+            }
         }
     }
 
@@ -61,25 +71,9 @@ struct LoginView: View {
                 .padding(.horizontal, 24)
 
                 // Apple 로그인 버튼
-                Button(action: {
-                    // Apple 로그인 (추후 구현)
-                }) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 20))
-                        Text("Apple 계정으로 계속하기")
-                            .font(AppFont.headline())
-                    }
-                    .foregroundColor(AppColor.textPrimary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(AppColor.textPrimary, lineWidth: 1)
-                    )
-                }
-                .padding(.top, 24)
-                .padding(.horizontal, 24)
+                appleSignInButton
+                    .padding(.top, 24)
+                    .padding(.horizontal, 24)
 
                 // 구분선
                 Divider()
@@ -120,8 +114,8 @@ struct LoginView: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppColor.textSecondary)
                     Button("회원가입") {
-                        withAnimation {
-                            navigateToSignUp = true
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showSignUp = true
                         }
                     }
                     .font(.system(size: 14, weight: .semibold))
@@ -143,6 +137,57 @@ struct LoginView: View {
                 .padding(.bottom, 40)
             }
         }
+    }
+
+    // MARK: - Apple 로그인 버튼 (커스텀 디자인)
+    private var appleSignInButton: some View {
+        Button {
+            let provider = ASAuthorizationAppleIDProvider()
+            let request = provider.createRequest()
+            request.requestedScopes = [.fullName, .email]
+
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            let delegate = AppleSignInDelegate { result in
+                Task {
+                    await authViewModel.handleAppleSignIn(result: result)
+                }
+            }
+            // delegate를 유지하기 위해 objc associated object 사용
+            objc_setAssociatedObject(controller, "delegate", delegate, .OBJC_ASSOCIATION_RETAIN)
+            controller.delegate = delegate
+            controller.performRequests()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 20))
+                Text("Apple 계정으로 계속하기")
+                    .font(AppFont.headline())
+            }
+            .foregroundColor(AppColor.textPrimary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(AppColor.textPrimary, lineWidth: 1)
+            )
+        }
+    }
+}
+
+// MARK: - Apple Sign In Delegate
+class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
+    private let completion: (Result<ASAuthorization, Error>) -> Void
+
+    init(completion: @escaping (Result<ASAuthorization, Error>) -> Void) {
+        self.completion = completion
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        completion(.success(authorization))
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        completion(.failure(error))
     }
 }
 

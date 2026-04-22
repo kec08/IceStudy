@@ -45,6 +45,7 @@ enum TokenStorage {
         userId = token.userId
         nickname = token.nickname
         if let email { self.email = email }
+        else if let tokenEmail = token.email { self.email = tokenEmail }
     }
 
     static func clear() {

@@ -12,4 +12,5 @@ public class TokenResponse {
     private String refreshToken;
     private Long userId;
     private String nickname;
+    private String email;
 }

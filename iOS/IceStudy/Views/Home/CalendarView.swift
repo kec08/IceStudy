@@ -165,35 +165,22 @@ struct StudyCalendarView: View {
 
     // MARK: - 날짜 셀
     private func dayCell(day: Int, data: (minutes: Int, ml: Int)?, isToday: Bool, isFuture: Bool) -> some View {
-        VStack(alignment: .center, spacing: 0) {
-            // 날짜 - 왼쪽 위
-            HStack {
-                Text("\(day)")
-                    .font(.system(size: 11, weight: isToday ? .bold : .regular))
-                    .foregroundColor(isToday ? AppColor.primary : (isFuture ? AppColor.textTertiary : AppColor.textPrimary))
-                Spacer()
-            }
-            .padding(.leading, 4)
-            .padding(.top, 3)
-
-            Spacer()
+        VStack(spacing: 2) {
+            Text("\(day)")
+                .font(.system(size: 13, weight: isToday ? .bold : .regular))
+                .foregroundColor(isToday ? AppColor.primary : (isFuture ? AppColor.textTertiary : AppColor.textPrimary))
 
             if let data, data.minutes > 0, !isFuture {
-                // 공부 시간 - 가운데
                 let h = data.minutes / 60
                 let m = data.minutes % 60
                 Text(h > 0 ? "\(h)h\(m)m" : "\(m)m")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundColor(AppColor.primary)
 
-                // 채운 물양 - 그 아래
                 Text("\(data.ml)ml")
                     .font(.system(size: 7, weight: .medium))
                     .foregroundColor(AppColor.textSecondary)
-                    .padding(.top, 1)
             }
-
-            Spacer()
         }
         .frame(maxWidth: .infinity)
         .frame(height: 64)

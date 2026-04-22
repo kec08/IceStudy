@@ -69,6 +69,7 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .userId(user.getId())
                 .nickname(user.getNickname())
+                .email(user.getEmail())
                 .build();
     }
 
@@ -85,6 +86,13 @@ public class AuthService {
 
         // 기존 유저 조회 또는 신규 생성
         User user = userRepository.findByAppleId(appleId)
+                .map(existing -> {
+                    // fallback 이메일이면 실제 이메일로 업데이트
+                    if (existing.getEmail().endsWith("@apple.icestudy") && !resolvedEmail.endsWith("@apple.icestudy")) {
+                        existing.updateEmail(resolvedEmail);
+                    }
+                    return existing;
+                })
                 .orElseGet(() -> {
                     String nickname = (request.getNickname() != null) ? request.getNickname() : "유저";
 
@@ -118,6 +126,7 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .userId(user.getId())
                 .nickname(user.getNickname())
+                .email(user.getEmail())
                 .build();
     }
 
@@ -154,6 +163,7 @@ public class AuthService {
                 .refreshToken(newRefreshToken)
                 .userId(user.getId())
                 .nickname(user.getNickname())
+                .email(user.getEmail())
                 .build();
     }
 }

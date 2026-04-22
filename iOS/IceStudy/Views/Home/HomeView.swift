@@ -7,6 +7,7 @@ struct WeekData {
 }
 
 struct HomeView: View {
+    @Binding var needsRefresh: Bool
     @State private var weekOffset: Int = 0
     @State private var showCalendar = false
     @State private var slideDirection: Edge = .leading
@@ -90,11 +91,12 @@ struct HomeView: View {
         .task(id: weekOffset) {
             await fetchWeeklyStats(for: weekOffset)
         }
-        .onAppear {
-            // 현재 주 캐시 초기화 후 새로 불러오기
-            weekCache.removeValue(forKey: weekOffset)
-            Task {
-                await fetchWeeklyStats(for: weekOffset)
+        .onChange(of: needsRefresh) { _, refresh in
+            if refresh {
+                needsRefresh = false
+                Task {
+                    await fetchWeeklyStats(for: weekOffset)
+                }
             }
         }
     }
@@ -102,20 +104,20 @@ struct HomeView: View {
     // MARK: - API
     private func fetchWeeklyStats(for offset: Int) async {
         isLoading = true
-        let goal = goalForWeek(offset)
+        let existingGoal = weekCache[offset]?.goalML ?? goalForWeek(offset)
         do {
             let stats = try await StatsService.shared.fetchWeekly(weekOffset: offset)
-            weekCache[offset] = WeekData(
-                filledML: Int(stats.filledMl),
-                goalML: goal,
-                totalMinutes: stats.totalMinutes
-            )
-        } catch {
-            // API 실패 시에도 목표량은 설정
-            if weekCache[offset] == nil {
-                weekCache[offset] = WeekData(goalML: goal)
+            withAnimation(.easeInOut(duration: 0.5)) {
+                weekCache[offset] = WeekData(
+                    filledML: Int(stats.filledMl),
+                    goalML: existingGoal,
+                    totalMinutes: stats.totalMinutes
+                )
             }
-            print("주간 통계 조회 실패: \(error.localizedDescription)")
+        } catch {
+            if weekCache[offset] == nil {
+                weekCache[offset] = WeekData(goalML: existingGoal)
+            }
         }
         isLoading = false
     }
@@ -368,5 +370,5 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(needsRefresh: .constant(false))
 }

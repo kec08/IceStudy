@@ -6,6 +6,7 @@ enum AuthAPI {
     case login(email: String, password: String)
     case signup(email: String, password: String, nickname: String)
     case refresh(refreshToken: String)
+    case appleLogin(identityToken: String, nickname: String?, email: String?)
 }
 
 extension AuthAPI: TargetType {
@@ -16,9 +17,10 @@ extension AuthAPI: TargetType {
 
     var path: String {
         switch self {
-        case .login:    "/api/auth/login"
-        case .signup:   "/api/auth/signup"
-        case .refresh:  "/api/auth/refresh"
+        case .login:      "/api/auth/login"
+        case .signup:     "/api/auth/signup"
+        case .refresh:    "/api/auth/refresh"
+        case .appleLogin: "/api/auth/apple"
         }
     }
 
@@ -32,6 +34,8 @@ extension AuthAPI: TargetType {
             .requestJSONEncodable(SignUpRequest(email: email, password: password, nickname: nickname))
         case let .refresh(refreshToken):
             .requestJSONEncodable(RefreshRequest(refreshToken: refreshToken))
+        case let .appleLogin(identityToken, nickname, email):
+            .requestJSONEncodable(AppleLoginRequest(identityToken: identityToken, nickname: nickname, email: email))
         }
     }
 
