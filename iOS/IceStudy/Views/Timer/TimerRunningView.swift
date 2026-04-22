@@ -54,10 +54,31 @@ struct TimerRunningView: View {
     }
 
     private var statusMessage: String {
-        switch viewModel.timerState {
-        case .running: "집중을 유지하고 있습니다"
-        case .paused: "일시정지 중입니다"
-        default: ""
+        if viewModel.timerState == .paused {
+            return "잠깐 쉬어가는 중..."
+        }
+        let p = viewModel.progress
+        switch p {
+        case ..<0.1:
+            return "얼음이 녹기 시작했어요"
+        case 0.1..<0.2:
+            return "좋은 시작이에요, 계속 가봐요"
+        case 0.2..<0.3:
+            return "집중의 흐름을 타고 있어요"
+        case 0.3..<0.4:
+            return "벌써 꽤 녹았어요, 잘하고 있어요"
+        case 0.4..<0.5:
+            return "절반 가까이 왔어요!"
+        case 0.5..<0.6:
+            return "반을 넘겼어요, 대단해요"
+        case 0.6..<0.7:
+            return "오늘 집중력이 남다르네요"
+        case 0.7..<0.8:
+            return "거의 다 녹아가고 있어요"
+        case 0.8..<0.9:
+            return "조금만 더! 끝이 보여요"
+        default:
+            return "마지막 한 방울까지 화이팅!"
         }
     }
 
@@ -110,7 +131,7 @@ struct TimerRunningView: View {
                 }
             }
         }
-        .padding(.bottom, 24)
+        .padding(.bottom, 40)
     }
 }
 

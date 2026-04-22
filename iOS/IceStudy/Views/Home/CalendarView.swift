@@ -6,6 +6,7 @@ struct StudyCalendarView: View {
     // 서버 데이터: [yyyy-MM-dd: (minutes, ml)]
     @State private var studyData: [String: (minutes: Int, ml: Int)] = [:]
     @State private var loadedMonths: Set<String> = []
+    @State private var scrollTarget: Int?
 
     private var months: [(year: Int, month: Int)] {
         let calendar = Calendar.current
@@ -50,17 +51,26 @@ struct StudyCalendarView: View {
                     .padding(.bottom, 4)
 
                 // 달력 스크롤
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 24) {
-                        ForEach(months, id: \.month) { item in
-                            monthSection(year: item.year, month: item.month)
-                                .task {
-                                    await loadMonth(year: item.year, month: item.month)
-                                }
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(spacing: 24) {
+                            ForEach(months, id: \.month) { item in
+                                monthSection(year: item.year, month: item.month)
+                                    .id(item.month)
+                                    .task {
+                                        await loadMonth(year: item.year, month: item.month)
+                                    }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 40)
+                    }
+                    .onAppear {
+                        // 현재 달로 스크롤
+                        if let lastMonth = months.last?.month {
+                            proxy.scrollTo(lastMonth, anchor: .top)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 40)
                 }
             }
         }
@@ -75,7 +85,11 @@ struct StudyCalendarView: View {
         do {
             let response = try await StatsService.shared.fetchCalendar(year: year, month: month)
             for day in response.days {
-                studyData[day.date] = (Int(day.totalMinutes), Int(day.waterMl))
+                let minutes = Int(day.totalMinutes)
+                let ml = Int(day.waterMl)
+                if minutes > 0 {
+                    studyData[day.date] = (minutes, ml)
+                }
             }
         } catch {
             print("캘린더 \(year)-\(month) 조회 실패: \(error.localizedDescription)")
@@ -151,27 +165,35 @@ struct StudyCalendarView: View {
 
     // MARK: - 날짜 셀
     private func dayCell(day: Int, data: (minutes: Int, ml: Int)?, isToday: Bool, isFuture: Bool) -> some View {
-        VStack(spacing: 2) {
-            Text("\(day)")
-                .font(.system(size: 13, weight: isToday ? .bold : .regular))
-                .foregroundColor(isToday ? AppColor.primary : (isFuture ? AppColor.textTertiary : AppColor.textPrimary))
+        VStack(alignment: .center, spacing: 0) {
+            // 날짜 - 왼쪽 위
+            HStack {
+                Text("\(day)")
+                    .font(.system(size: 11, weight: isToday ? .bold : .regular))
+                    .foregroundColor(isToday ? AppColor.primary : (isFuture ? AppColor.textTertiary : AppColor.textPrimary))
+                Spacer()
+            }
+            .padding(.leading, 4)
+            .padding(.top, 3)
 
-            if let data, !isFuture {
+            Spacer()
+
+            if let data, data.minutes > 0, !isFuture {
+                // 공부 시간 - 가운데
                 let h = data.minutes / 60
                 let m = data.minutes % 60
                 Text(h > 0 ? "\(h)h\(m)m" : "\(m)m")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundColor(AppColor.primary)
 
+                // 채운 물양 - 그 아래
                 Text("\(data.ml)ml")
                     .font(.system(size: 7, weight: .medium))
                     .foregroundColor(AppColor.textSecondary)
-            } else {
-                Text("")
-                    .font(.system(size: 8))
-                Text("")
-                    .font(.system(size: 7))
+                    .padding(.top, 1)
             }
+
+            Spacer()
         }
         .frame(maxWidth: .infinity)
         .frame(height: 64)
@@ -185,7 +207,7 @@ struct StudyCalendarView: View {
         if isToday {
             return AppColor.primary.opacity(0.08)
         }
-        guard let data, !isFuture else { return Color.clear }
+        guard let data, data.minutes > 0, !isFuture else { return Color.clear }
 
         let minutes = Double(data.minutes)
         if minutes >= 180 {
