@@ -1,15 +1,17 @@
 import SwiftUI
 
 struct ProfileView: View {
-    // 임시 데이터
-    private let nickname = "얼공얼공"
-    private let email = "kec4489@icloud.com"
-    private let iceCount = 300
-    private let totalML = 11500
-    private let totalHours = 16
-    private let totalMinutes = 10
+    @Environment(AuthViewModel.self) private var authViewModel
 
-    private let weeklyMinutes: [Int] = [180, 80, 150, 200, 120, 60, 140] // 월~일
+    // 서버 데이터
+    @State private var nickname = ""
+    @State private var email = ""
+    @State private var iceCount = 0
+    @State private var totalML = 0
+    @State private var totalHours = 0
+    @State private var totalMinutes = 0
+    @State private var weeklyMinutes: [Int] = [0, 0, 0, 0, 0, 0, 0]
+
     private let dayLabels = ["월", "화", "수", "목", "금", "토", "일"]
 
     private var dailyAverage: Int {
@@ -23,31 +25,49 @@ struct ProfileView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    // 네비바
                     navBar
                         .padding(.top, 16)
 
-                    // 프로필 영역
                     profileSection
                         .padding(.top, 24)
                         .padding(.horizontal, 24)
 
-                    // 정보 섹션
                     infoSection
                         .padding(.top, 28)
                         .padding(.horizontal, 24)
 
-                    // 히스토리 섹션
                     historySection
                         .padding(.top, 28)
                         .padding(.horizontal, 24)
 
-                    // 로그아웃
                     logoutButton
                         .padding(.top, 80)
                         .padding(.bottom, 100)
                 }
             }
+        }
+        .task {
+            await fetchProfile()
+        }
+    }
+
+    // MARK: - API
+    private func fetchProfile() async {
+        nickname = TokenStorage.nickname ?? "사용자"
+        email = TokenStorage.email ?? ""
+
+        do {
+            let stats = try await StatsService.shared.fetchProfile()
+            iceCount = stats.iceCount
+            totalML = Int(stats.totalMl)
+            let minutes = stats.totalMinutes
+            totalHours = minutes / 60
+            totalMinutes = minutes % 60
+            if stats.weeklyMinutes.count == 7 {
+                weeklyMinutes = stats.weeklyMinutes
+            }
+        } catch {
+            print("프로필 통계 조회 실패: \(error.localizedDescription)")
         }
     }
 
@@ -75,7 +95,6 @@ struct ProfileView: View {
     // MARK: - 프로필
     private var profileSection: some View {
         HStack(spacing: 14) {
-            // 프로필 아이콘
             ZStack {
                 Circle()
                     .fill(AppColor.primary)
@@ -198,7 +217,7 @@ struct ProfileView: View {
     // MARK: - 로그아웃
     private var logoutButton: some View {
         Button {
-            // 로그아웃 (추후)
+            authViewModel.logout()
         } label: {
             Text("로그아웃")
                 .font(.system(size: 14, weight: .semibold))
@@ -210,4 +229,5 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView()
+        .environment(AuthViewModel())
 }

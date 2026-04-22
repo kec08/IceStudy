@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: icestudy-api
+
+  profiles:
+    active: dev
+
+jwt:
+  secret: ${JWT_SECRET:icestudy-dev-secret-key-must-be-at-least-256-bits-long-for-hs256}
+  access-expiration: 3600000      # 1시간
+  refresh-expiration: 1209600000  # 14일
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.icestudy: DEBUG
+    org.springframework.security: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

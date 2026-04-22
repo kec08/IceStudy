@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct SignUpView: View {
+    @Environment(AuthViewModel.self) private var authViewModel
     @State private var nickname = ""
     @State private var email = ""
     @State private var password = ""
     @State private var passwordConfirm = ""
+    @State private var signUpSuccess = false
     var onBack: () -> Void
 
     private var isFormValid: Bool {
@@ -70,6 +72,26 @@ struct SignUpView: View {
                             .padding(.top, 8)
                             .padding(.horizontal, 24)
                     }
+
+                    // 에러 메시지
+                    if let error = authViewModel.errorMessage {
+                        Text(error)
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColor.danger)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 8)
+                            .padding(.horizontal, 24)
+                    }
+
+                    // 성공 메시지
+                    if signUpSuccess {
+                        Text("회원가입이 완료되었습니다! 로그인해주세요.")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColor.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 8)
+                            .padding(.horizontal, 24)
+                    }
                 }
 
                 Spacer()
@@ -89,8 +111,23 @@ struct SignUpView: View {
                 .padding(.bottom, 16)
 
                 // 회원가입 버튼
-                PrimaryButton(title: "회원가입", isEnabled: isFormValid) {
-                    onBack()
+                PrimaryButton(
+                    title: authViewModel.isLoading ? "가입 중..." : "회원가입",
+                    isEnabled: isFormValid && !authViewModel.isLoading
+                ) {
+                    Task {
+                        let success = await authViewModel.signup(
+                            email: email,
+                            password: password,
+                            nickname: nickname
+                        )
+                        if success {
+                            signUpSuccess = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                onBack()
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 40)
@@ -101,4 +138,5 @@ struct SignUpView: View {
 
 #Preview {
     SignUpView(onBack: {})
+        .environment(AuthViewModel())
 }

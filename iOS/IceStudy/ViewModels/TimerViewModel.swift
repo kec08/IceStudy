@@ -19,6 +19,7 @@ class TimerViewModel {
     private(set) var totalDuration: Int = 0
     private var timer: AnyCancellable?
     private var backgroundDate: Date?
+    private(set) var currentSessionId: Int?
 
     // MARK: - Computed
     var progress: CGFloat {
@@ -46,6 +47,21 @@ class TimerViewModel {
         timerState = .running
         setupTimer()
         observeBackground()
+
+        // 서버에 세션 생성
+        Task {
+            do {
+                let response = try await SessionService.shared.createSession(
+                    cupSize: size.rawValue,
+                    totalDuration: totalDuration
+                )
+                await MainActor.run {
+                    self.currentSessionId = response.sessionId
+                }
+            } catch {
+                print("세션 생성 ���패: \(error.localizedDescription)")
+            }
+        }
     }
 
     func pauseTimer() {
@@ -62,6 +78,22 @@ class TimerViewModel {
         timer?.cancel()
         timerState = .aborted
         setFocusMode(false)
+
+        // 서버에 세션 포기 전송
+        guard let sessionId = currentSessionId else { return }
+        let elapsed = elapsedSeconds
+        let water = waterML
+        Task {
+            do {
+                _ = try await SessionService.shared.abortSession(
+                    id: sessionId,
+                    elapsedTime: elapsed,
+                    waterMl: water
+                )
+            } catch {
+                print("세션 포기 전송 실패: \(error.localizedDescription)")
+            }
+        }
     }
 
     func toggleFocusMode() {
@@ -74,12 +106,12 @@ class TimerViewModel {
         timerState = .idle
         elapsedSeconds = 0
         totalDuration = 0
+        currentSessionId = nil
         setFocusMode(false)
     }
 
     private func setFocusMode(_ enabled: Bool) {
         isFocusMode = enabled
-        // 화면 꺼짐 방지
         UIApplication.shared.isIdleTimerDisabled = enabled
     }
 
@@ -94,8 +126,26 @@ class TimerViewModel {
                 if self.elapsedSeconds >= self.totalDuration {
                     self.timer?.cancel()
                     self.timerState = .completed
+                    self.sendComplete()
                 }
             }
+    }
+
+    private func sendComplete() {
+        guard let sessionId = currentSessionId else { return }
+        let elapsed = elapsedSeconds
+        let water = waterML
+        Task {
+            do {
+                _ = try await SessionService.shared.completeSession(
+                    id: sessionId,
+                    elapsedTime: elapsed,
+                    waterMl: water
+                )
+            } catch {
+                print("세션 완료 전송 실패: \(error.localizedDescription)")
+            }
+        }
     }
 
     private func observeBackground() {
@@ -120,6 +170,7 @@ class TimerViewModel {
             if self.elapsedSeconds >= self.totalDuration {
                 self.elapsedSeconds = self.totalDuration
                 self.timerState = .completed
+                self.sendComplete()
             } else if self.timerState == .running {
                 self.setupTimer()
             }

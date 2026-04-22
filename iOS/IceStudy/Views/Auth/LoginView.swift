@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct LoginView: View {
+    @Environment(AuthViewModel.self) private var authViewModel
     @State private var email = ""
     @State private var password = ""
-    @State private var navigateToHome = false
     @State private var navigateToSignUp = false
 
     private var isFormValid: Bool {
@@ -11,12 +11,14 @@ struct LoginView: View {
     }
 
     var body: some View {
-        if navigateToHome {
+        if authViewModel.isLoggedIn {
             MainTabView()
+                .environment(authViewModel)
         } else if navigateToSignUp {
             SignUpView(onBack: {
                 navigateToSignUp = false
             })
+            .environment(authViewModel)
         } else {
             loginContent
         }
@@ -100,6 +102,16 @@ struct LoginView: View {
                 .padding(.top, 24)
                 .padding(.horizontal, 24)
 
+                // 에러 메시지
+                if let error = authViewModel.errorMessage {
+                    Text(error)
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColor.danger)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 12)
+                        .padding(.horizontal, 24)
+                }
+
                 Spacer()
 
                 // 회원가입 링크
@@ -119,9 +131,12 @@ struct LoginView: View {
                 .padding(.bottom, 16)
 
                 // 로그인 버튼
-                PrimaryButton(title: "로그인", isEnabled: isFormValid) {
-                    withAnimation {
-                        navigateToHome = true
+                PrimaryButton(
+                    title: authViewModel.isLoading ? "로그인 중..." : "로그인",
+                    isEnabled: isFormValid && !authViewModel.isLoading
+                ) {
+                    Task {
+                        await authViewModel.login(email: email, password: password)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -167,4 +182,5 @@ struct StyledInputField: View {
 
 #Preview {
     LoginView()
+        .environment(AuthViewModel())
 }

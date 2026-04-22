@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @Environment(AuthViewModel.self) private var authViewModel
     @State private var navigateToLogin = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     var body: some View {
         if navigateToLogin {
             LoginView()
+                .environment(authViewModel)
         } else {
             onboardingContent
         }
@@ -62,4 +64,5 @@ struct OnboardingView: View {
 
 #Preview {
     OnboardingView()
+        .environment(AuthViewModel())
 }

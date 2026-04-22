@@ -1,22 +1,31 @@
 import SwiftUI
 
 struct SplashView: View {
+    @Environment(AuthViewModel.self) private var authViewModel
     @State private var isAnimating = false
     @State private var navigateNext = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     var body: some View {
         if navigateNext {
-            if hasSeenOnboarding {
+            if authViewModel.isLoggedIn {
+                MainTabView()
+                    .environment(authViewModel)
+            } else if hasSeenOnboarding {
                 LoginView()
+                    .environment(authViewModel)
             } else {
                 OnboardingView()
+                    .environment(authViewModel)
             }
         } else {
             splashContent
                 .onAppear {
                     withAnimation(.easeOut(duration: 0.8)) {
                         isAnimating = true
+                    }
+                    Task {
+                        await authViewModel.tryAutoLogin()
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                         withAnimation {
@@ -53,4 +62,5 @@ struct SplashView: View {
 
 #Preview {
     SplashView()
+        .environment(AuthViewModel())
 }

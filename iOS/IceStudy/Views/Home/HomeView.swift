@@ -1,27 +1,41 @@
 import SwiftUI
 
+struct WeekData {
+    var filledML: Int = 0
+    var goalML: Int = 3000
+    var totalMinutes: Int = 0
+}
+
 struct HomeView: View {
     @State private var weekOffset: Int = 0
     @State private var showCalendar = false
     @State private var slideDirection: Edge = .leading
+    @State private var isLoading = false
 
-    // 주간별 임시 데이터 (weekOffset 기반)
-    private var weekData: (filledML: Int, goalML: Int, totalMinutes: Int) {
-        // 해시 기반으로 주마다 다른 데이터
-        let seed = abs(weekOffset * 7 + 42)
-        let base = weekOffset == 0 ? 1800 : (800 + (seed * 137) % 2200)
-        let goal = 3000
-        let minutes = Int(Double(base) / 355.0 * 60.0)
-        return (base, goal, minutes)
+    // 주별 캐시 [weekOffset: WeekData]
+    @State private var weekCache: [Int: WeekData] = [:]
+
+    private var currentData: WeekData {
+        weekCache[weekOffset] ?? WeekData()
     }
 
-    private var filledML: Int { weekData.filledML }
-    private var goalML: Int { weekData.goalML }
-    private var totalHours: Int { weekData.totalMinutes / 60 }
-    private var totalMinutes: Int { weekData.totalMinutes % 60 }
+    private var filledML: Int { currentData.filledML }
+    private var goalML: Int { currentData.goalML }
+    private var totalHours: Int { currentData.totalMinutes / 60 }
+    private var totalMinutes: Int { currentData.totalMinutes % 60 }
 
     private var fillRatio: CGFloat {
-        min(CGFloat(filledML) / CGFloat(goalML), 1.0)
+        guard goalML > 0 else { return 0 }
+        return min(CGFloat(filledML) / CGFloat(goalML), 1.0)
+    }
+
+    // weekOffset 기반 결정적 랜덤 목표량 (1500~3000ml)
+    private func goalForWeek(_ offset: Int) -> Int {
+        var hasher = Hasher()
+        hasher.combine(offset)
+        hasher.combine(2026)
+        let hash = abs(hasher.finalize())
+        return 1500 + (hash % 1501) // 1500 ~ 3000
     }
 
     private var weekLabel: String {
@@ -42,7 +56,6 @@ struct HomeView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // 상단 로고
                 HStack {
                     LogoHeaderView()
                     Spacer()
@@ -51,11 +64,9 @@ struct HomeView: View {
                 .padding(.top, -4)
                 .padding(.bottom, 30)
 
-                // 주간 네비게이션
                 weekNavigator
                     .padding(.top, 14)
 
-                // 주간 콘텐츠 (슬라이드 전환)
                 weekContent
                     .id(weekOffset)
                     .transition(.asymmetric(
@@ -64,7 +75,6 @@ struct HomeView: View {
                     ))
                     .animation(.easeInOut(duration: 0.3), value: weekOffset)
 
-                // 캘린더 FAB
                 HStack {
                     Spacer()
                     calendarFAB
@@ -77,20 +87,48 @@ struct HomeView: View {
         .fullScreenCover(isPresented: $showCalendar) {
             StudyCalendarView()
         }
+        .task(id: weekOffset) {
+            await fetchWeeklyStats(for: weekOffset)
+        }
+        .onAppear {
+            // 현재 주 캐시 초기화 후 새로 불러오기
+            weekCache.removeValue(forKey: weekOffset)
+            Task {
+                await fetchWeeklyStats(for: weekOffset)
+            }
+        }
+    }
+
+    // MARK: - API
+    private func fetchWeeklyStats(for offset: Int) async {
+        isLoading = true
+        let goal = goalForWeek(offset)
+        do {
+            let stats = try await StatsService.shared.fetchWeekly(weekOffset: offset)
+            weekCache[offset] = WeekData(
+                filledML: Int(stats.filledMl),
+                goalML: goal,
+                totalMinutes: stats.totalMinutes
+            )
+        } catch {
+            // API 실패 시에도 목표량은 설정
+            if weekCache[offset] == nil {
+                weekCache[offset] = WeekData(goalML: goal)
+            }
+            print("주간 통계 조회 실패: \(error.localizedDescription)")
+        }
+        isLoading = false
     }
 
     // MARK: - 주간 콘텐츠
     private var weekContent: some View {
         VStack(spacing: 0) {
-            // 채운 물양
             waterAmountSection
                 .padding(.top, 12)
 
-            // 양동이 (유리컵)
             glassCupSection
                 .padding(.top, 0)
 
-            // 하단 통계
             bottomStats
                 .padding(.horizontal, 24)
                 .padding(.top, -4)
@@ -162,14 +200,10 @@ struct HomeView: View {
             let cupHeight = cupWidth * 1.08
 
             ZStack {
-                // 1) 컵 바닥 그림자
                 Ellipse()
                     .fill(
                         RadialGradient(
-                            colors: [
-                                Color.black.opacity(0.06),
-                                Color.clear
-                            ],
+                            colors: [Color.black.opacity(0.06), Color.clear],
                             center: .center,
                             startRadius: 0,
                             endRadius: cupWidth * 0.45
@@ -178,12 +212,10 @@ struct HomeView: View {
                     .frame(width: cupWidth * 0.7, height: 16)
                     .offset(y: cupHeight * 0.52)
 
-                // 2) 컵 외형
                 GlassCupShape()
                     .fill(Color(hex: "D8F0FF").opacity(0.04))
                     .frame(width: cupWidth, height: cupHeight)
 
-                // 3) 물 채움
                 if fillRatio > 0 {
                     GlassCupShape()
                         .fill(
@@ -206,7 +238,6 @@ struct HomeView: View {
                         )
                 }
 
-                // 4) 컵 외곽선 (유리 테두리)
                 GlassCupShape()
                     .stroke(
                         LinearGradient(
@@ -222,14 +253,10 @@ struct HomeView: View {
                     )
                     .frame(width: cupWidth, height: cupHeight)
 
-                // 5) 유리 반사 하이라이트 (좌측)
                 GlassCupShape()
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.35),
-                                Color.white.opacity(0.0)
-                            ],
+                            colors: [Color.white.opacity(0.35), Color.white.opacity(0.0)],
                             startPoint: .topLeading,
                             endPoint: .center
                         )
@@ -237,14 +264,11 @@ struct HomeView: View {
                     .frame(width: cupWidth, height: cupHeight)
                     .mask(
                         HStack {
-                            Rectangle()
-                                .frame(width: cupWidth * 0.35)
+                            Rectangle().frame(width: cupWidth * 0.35)
                             Spacer()
-                        }
-                        .frame(width: cupWidth)
+                        }.frame(width: cupWidth)
                     )
 
-                // 6) 우측 엣지 반사
                 GlassCupShape()
                     .stroke(
                         LinearGradient(
@@ -262,13 +286,10 @@ struct HomeView: View {
                     .mask(
                         HStack {
                             Spacer()
-                            Rectangle()
-                                .frame(width: cupWidth * 0.15)
-                        }
-                        .frame(width: cupWidth)
+                            Rectangle().frame(width: cupWidth * 0.15)
+                        }.frame(width: cupWidth)
                     )
 
-                // 7) 바닥 두께감
                 Ellipse()
                     .fill(
                         LinearGradient(
