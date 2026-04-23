@@ -18,7 +18,9 @@ struct ProfileView: View {
     private let dayLabels = ["월", "화", "수", "목", "금", "토", "일"]
 
     private var dailyAverage: Int {
-        weeklyMinutes.reduce(0, +) / max(weeklyMinutes.count, 1)
+        let activeDays = weeklyMinutes.filter { $0 > 0 }.count
+        guard activeDays > 0 else { return 0 }
+        return weeklyMinutes.reduce(0, +) / activeDays
     }
 
     var body: some View {
