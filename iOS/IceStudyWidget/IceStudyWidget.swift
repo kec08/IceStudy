@@ -304,7 +304,7 @@ struct DailyAverageWidgetView: View {
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(Color(hex: "212121"))
             }
-            .padding(.top, -10)
+            .padding(.top, -6)
             .padding(.leading, 16)
         }
         .containerBackground(for: .widget) {
