@@ -6,6 +6,7 @@ struct WeeklyStatsResponse: Decodable {
     let goalMl: Double
     let totalMinutes: Int
     let sessions: [SessionSummary]?
+    let dailyStats: [DailyStat]?
 
     struct SessionSummary: Decodable {
         let sessionId: Int
@@ -14,6 +15,12 @@ struct WeeklyStatsResponse: Decodable {
         let elapsedTime: Int
         let isCompleted: Bool
         let createdAt: String
+    }
+
+    struct DailyStat: Decodable {
+        let date: String
+        let totalMinutes: Int
+        let waterMl: Double
     }
 }
 
@@ -54,4 +61,9 @@ struct UserResponse: Decodable {
 
 struct UserUpdateRequest: Encodable {
     let nickname: String
+}
+
+struct ChangePasswordRequest: Encodable {
+    let currentPassword: String
+    let newPassword: String
 }

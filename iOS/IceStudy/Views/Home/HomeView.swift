@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 struct WeekData {
     var filledML: Int = 0
@@ -113,6 +114,21 @@ struct HomeView: View {
                     goalML: existingGoal,
                     totalMinutes: stats.totalMinutes
                 )
+            }
+
+            // 위젯 데이터 저장 (현재 보고 있는 주가 이번 주일 때)
+            if offset == 0 {
+                let weeklyMinutes = stats.dailyStats?.map { $0.totalMinutes } ?? [0, 0, 0, 0, 0, 0, 0]
+                let widgetData = WidgetData(
+                    filledMl: Int(stats.filledMl),
+                    goalMl: existingGoal,
+                    totalMinutes: stats.totalMinutes,
+                    weeklyMinutes: weeklyMinutes,
+                    lastUpdated: Date()
+                )
+                WidgetDataStore.save(widgetData)
+                WidgetCenter.shared.reloadAllTimelines()
+                print("[Widget] 데이터 저장: \(Int(stats.filledMl))ml, \(stats.totalMinutes)분")
             }
         } catch {
             if weekCache[offset] == nil {

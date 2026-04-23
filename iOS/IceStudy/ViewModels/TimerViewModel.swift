@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import WidgetKit
 
 enum TimerState: Sendable, Equatable {
     case idle
@@ -163,6 +164,8 @@ class TimerViewModel {
                     elapsedTime: elapsed,
                     waterMl: water
                 )
+                // 위젯 갱신
+                WidgetCenter.shared.reloadAllTimelines()
             } catch {
                 print("세션 완료 전송 실패: \(error.localizedDescription)")
             }

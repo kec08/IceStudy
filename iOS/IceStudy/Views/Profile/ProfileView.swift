@@ -4,6 +4,7 @@ struct ProfileView: View {
     @Environment(AuthViewModel.self) private var authViewModel
 
     @State private var showLogoutAlert = false
+    @State private var showSettings = false
 
     // 서버 데이터
     @State private var nickname = ""
@@ -51,6 +52,12 @@ struct ProfileView: View {
         .task {
             await fetchProfile()
         }
+        .fullScreenCover(isPresented: $showSettings) {
+            SettingsView(onNicknameChanged: { newNickname in
+                nickname = newNickname
+            })
+            .environment(authViewModel)
+        }
     }
 
     // MARK: - API
@@ -75,11 +82,23 @@ struct ProfileView: View {
 
     // MARK: - 네비바
     private var navBar: some View {
-        Text("마이")
-            .font(.system(size: 18, weight: .semibold))
-            .foregroundColor(AppColor.textPrimary)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 24)
+        ZStack {
+            Text("마이")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(AppColor.textPrimary)
+
+            HStack {
+                Spacer()
+                Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 20))
+                        .foregroundColor(AppColor.textPrimary)
+                }
+            }
+        }
+        .padding(.horizontal, 24)
     }
 
     // MARK: - 프로필

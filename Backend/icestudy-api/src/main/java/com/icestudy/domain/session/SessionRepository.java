@@ -25,4 +25,6 @@ public interface SessionRepository extends JpaRepository<StudySession, Long> {
 
     @Query("SELECT COALESCE(SUM(s.elapsedTime), 0) FROM StudySession s WHERE s.user = :user")
     long sumElapsedTimeByUser(@Param("user") User user);
+
+    void deleteAllByUser(User user);
 }
