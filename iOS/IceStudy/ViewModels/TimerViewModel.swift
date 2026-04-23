@@ -28,8 +28,14 @@ class TimerViewModel {
         return min(CGFloat(elapsedSeconds) / CGFloat(totalDuration), 1.0)
     }
 
+    var waterProgress: CGFloat {
+        let maxSeconds = CGFloat(cupSize.durationRange.upperBound)
+        guard maxSeconds > 0 else { return 0 }
+        return min(CGFloat(elapsedSeconds) / maxSeconds, 1.0)
+    }
+
     var waterML: Double {
-        Double(progress) * cupSize.maxML
+        Double(waterProgress) * cupSize.maxML
     }
 
     var elapsedHours: Int {

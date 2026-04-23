@@ -148,6 +148,11 @@ struct WeeklyChartView: View {
                 )
         )
         .onAppear {
+            // 최초 진입 시 즉시 표시
+            animatedProgress = 1.0
+        }
+        .onChange(of: weeklyMinutes) {
+            animatedProgress = 0
             withAnimation(.easeOut(duration: 0.8)) {
                 animatedProgress = 1.0
             }

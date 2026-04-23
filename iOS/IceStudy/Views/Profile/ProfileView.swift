@@ -15,6 +15,16 @@ struct ProfileView: View {
     @State private var totalMinutes = 0
     @State private var weeklyMinutes: [Int] = [0, 0, 0, 0, 0, 0, 0]
 
+    // 카운트업 애니메이션
+    @State private var displayIceCount = 0
+    @State private var displayTotalML = 0
+    @State private var displayTotalHours = 0
+    @State private var displayTotalMinutes = 0
+    @State private var prevIceCount = 0
+    @State private var prevTotalML = 0
+    @State private var prevTotalHours = 0
+    @State private var prevTotalMinutes = 0
+
     private let dayLabels = ["월", "화", "수", "목", "금", "토", "일"]
 
     private var dailyAverage: Int {
@@ -54,6 +64,8 @@ struct ProfileView: View {
         .task {
             await fetchProfile()
         }
+        .onChange(of: iceCount) { animateCountUp() }
+        .onChange(of: totalML) { animateCountUp() }
         .fullScreenCover(isPresented: $showSettings) {
             SettingsView(onNicknameChanged: { newNickname in
                 nickname = newNickname
@@ -137,11 +149,11 @@ struct ProfileView: View {
 
             HStack(spacing: 10) {
                 statCard(imageName: "IceCube",
-                         label: "녹인 얼음 갯수", value: "\(iceCount)", unit: "개")
+                         label: "녹인 얼음 갯수", value: "\(displayIceCount)", unit: "개")
                 statCard(imageName: "Water",
-                         label: "총 물의 양", value: "\(totalML)", unit: "ml")
+                         label: "총 물의 양", value: "\(displayTotalML)", unit: "ml")
                 timeStatCard(imageName: "Clock",
-                             label: "총 공부시간", hours: totalHours, minutes: totalMinutes)
+                             label: "총 공부시간", hours: displayTotalHours, minutes: displayTotalMinutes)
             }
         }
     }
@@ -222,6 +234,37 @@ struct ProfileView: View {
                 dayLabels: dayLabels,
                 dailyAverage: dailyAverage
             )
+        }
+    }
+
+    // MARK: - 카운트업 애니메이션
+    private func animateCountUp() {
+        let fromIce = prevIceCount
+        let fromML = prevTotalML
+        let fromHours = prevTotalHours
+        let fromMinutes = prevTotalMinutes
+
+        let duration: Double = 0.8
+        let steps = 30
+        let interval = duration / Double(steps)
+
+        for step in 0...steps {
+            let fraction = Double(step) / Double(steps)
+            let eased = 1 - pow(1 - fraction, 3)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + interval * Double(step)) {
+                displayIceCount = fromIce + Int(Double(iceCount - fromIce) * eased)
+                displayTotalML = fromML + Int(Double(totalML - fromML) * eased)
+                displayTotalHours = fromHours + Int(Double(totalHours - fromHours) * eased)
+                displayTotalMinutes = fromMinutes + Int(Double(totalMinutes - fromMinutes) * eased)
+
+                if step == steps {
+                    prevIceCount = iceCount
+                    prevTotalML = totalML
+                    prevTotalHours = totalHours
+                    prevTotalMinutes = totalMinutes
+                }
+            }
         }
     }
 
