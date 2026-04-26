@@ -59,7 +59,7 @@ struct TimerResultView: View {
 
     // MARK: - 완료 헤더
     private var completedHeader: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 10) {
             Text("얼음이 모두 녹았습니다")
                 .font(AppFont.title3())
                 .foregroundColor(AppColor.textPrimary)
@@ -77,7 +77,7 @@ struct TimerResultView: View {
 
     // MARK: - 포기 헤더
     private var abortedHeader: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 10) {
             Text("집중이 중단되었습니다")
                 .font(AppFont.title3())
                 .foregroundColor(AppColor.textPrimary)

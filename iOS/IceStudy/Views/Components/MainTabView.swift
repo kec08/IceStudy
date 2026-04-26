@@ -31,6 +31,13 @@ struct MainTabView: View {
                 .tag(2)
         }
         .tint(AppColor.primary)
+        .onAppear {
+            let appearance = UITabBarAppearance()
+            appearance.stackedLayoutAppearance.normal.iconColor = UIColor.gray
+            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.gray]
+            UITabBar.appearance().standardAppearance = appearance
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
         .onChange(of: selectedTab) { _, newTab in
             if newTab == 0 {
                 homeNeedsRefresh = true

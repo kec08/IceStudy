@@ -3,7 +3,6 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AuthViewModel.self) private var authViewModel
 
-    @State private var showLogoutAlert = false
     @State private var showSettings = false
 
     // 서버 데이터
@@ -38,27 +37,23 @@ struct ProfileView: View {
             Color.white
                 .ignoresSafeArea()
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    navBar
-                        .padding(.top, 16)
+            VStack(alignment: .leading, spacing: 0) {
+                navBar
+                    .padding(.top, 16)
 
-                    profileSection
-                        .padding(.top, 24)
-                        .padding(.horizontal, 24)
+                profileSection
+                    .padding(.top, 24)
+                    .padding(.horizontal, 24)
 
-                    infoSection
-                        .padding(.top, 28)
-                        .padding(.horizontal, 24)
+                infoSection
+                    .padding(.top, 28)
+                    .padding(.horizontal, 24)
 
-                    historySection
-                        .padding(.top, 28)
-                        .padding(.horizontal, 24)
+                historySection
+                    .padding(.top, 28)
+                    .padding(.horizontal, 24)
 
-                    logoutButton
-                        .padding(.top, 80)
-                        .padding(.bottom, 100)
-                }
+                Spacer()
             }
         }
         .task {
@@ -131,9 +126,11 @@ struct ProfileView: View {
                 Text(nickname)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(AppColor.textPrimary)
-                Text(email.hasSuffix("@apple.icestudy") ? "Apple로 로그인" : email)
-                    .font(.system(size: 13))
-                    .foregroundColor(AppColor.textSecondary)
+                if !email.hasSuffix("@privaterelay.appleid.com") {
+                    Text(email)
+                        .font(.system(size: 13))
+                        .foregroundColor(AppColor.textSecondary)
+                }
             }
 
             Spacer()
@@ -238,55 +235,44 @@ struct ProfileView: View {
     }
 
     // MARK: - 카운트업 애니메이션
+    @State private var countUpTimer: Timer?
+
     private func animateCountUp() {
+        countUpTimer?.invalidate()
+
         let fromIce = prevIceCount
         let fromML = prevTotalML
         let fromHours = prevTotalHours
         let fromMinutes = prevTotalMinutes
+        let targetIce = iceCount
+        let targetML = totalML
+        let targetHours = totalHours
+        let targetMinutes = totalMinutes
 
-        let duration: Double = 0.8
         let steps = 30
-        let interval = duration / Double(steps)
+        var currentStep = 0
+        let interval = 0.8 / Double(steps)
 
-        for step in 0...steps {
-            let fraction = Double(step) / Double(steps)
+        countUpTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
+            currentStep += 1
+            let fraction = Double(currentStep) / Double(steps)
             let eased = 1 - pow(1 - fraction, 3)
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + interval * Double(step)) {
-                displayIceCount = fromIce + Int(Double(iceCount - fromIce) * eased)
-                displayTotalML = fromML + Int(Double(totalML - fromML) * eased)
-                displayTotalHours = fromHours + Int(Double(totalHours - fromHours) * eased)
-                displayTotalMinutes = fromMinutes + Int(Double(totalMinutes - fromMinutes) * eased)
+            displayIceCount = fromIce + Int(Double(targetIce - fromIce) * eased)
+            displayTotalML = fromML + Int(Double(targetML - fromML) * eased)
+            displayTotalHours = fromHours + Int(Double(targetHours - fromHours) * eased)
+            displayTotalMinutes = fromMinutes + Int(Double(targetMinutes - fromMinutes) * eased)
 
-                if step == steps {
-                    prevIceCount = iceCount
-                    prevTotalML = totalML
-                    prevTotalHours = totalHours
-                    prevTotalMinutes = totalMinutes
-                }
+            if currentStep >= steps {
+                timer.invalidate()
+                prevIceCount = targetIce
+                prevTotalML = targetML
+                prevTotalHours = targetHours
+                prevTotalMinutes = targetMinutes
             }
         }
     }
 
-    // MARK: - 로그아웃
-    private var logoutButton: some View {
-        Button {
-            showLogoutAlert = true
-        } label: {
-            Text("로그아웃")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.red)
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .alert("로그아웃", isPresented: $showLogoutAlert) {
-            Button("취소", role: .cancel) {}
-            Button("로그아웃", role: .destructive) {
-                authViewModel.logout()
-            }
-        } message: {
-            Text("정말 로그아웃 하시겠습니까?")
-        }
-    }
 }
 
 #Preview {

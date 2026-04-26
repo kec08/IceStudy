@@ -36,6 +36,7 @@ struct WeeklyChartView: View {
                 HStack(spacing: 4) {
                     Text("\(dayLabels[idx])요일")
                         .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(AppColor.textSecondary)
                     Text(formatTime(weeklyMinutes[idx]))
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(AppColor.primary)

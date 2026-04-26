@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var showNicknameChange = false
     @State private var showPasswordChange = false
     @State private var showDeleteAccount = false
+    @State private var showLogoutAlert = false
 
     private var isAppleUser: Bool {
         TokenStorage.email?.hasSuffix("@apple.icestudy") == true
@@ -59,6 +60,24 @@ struct SettingsView: View {
                 .padding(.horizontal, 24)
 
                 Spacer()
+
+                Button {
+                    showLogoutAlert = true
+                } label: {
+                    Text("로그아웃")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.red)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 60)
+                .alert("로그아웃", isPresented: $showLogoutAlert) {
+                    Button("취소", role: .cancel) {}
+                    Button("로그아웃", role: .destructive) {
+                        authViewModel.logout()
+                    }
+                } message: {
+                    Text("정말 로그아웃 하시겠습니까?")
+                }
             }
         }
         .fullScreenCover(isPresented: $showNicknameChange) {

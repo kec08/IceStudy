@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,12 +26,13 @@ import java.util.stream.Collectors;
 public class StatsService {
 
     private static final double WEEKLY_GOAL_ML = 3000.0;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final SessionRepository sessionRepository;
 
     public WeeklyStatsResponse getWeeklyStats(User user, int weekOffset) {
         // 이번주 월요일 기준으로 weekOffset만큼 이전 주
-        LocalDate weekStart = LocalDate.now()
+        LocalDate weekStart = LocalDate.now(KST)
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 .minusWeeks(weekOffset);
         LocalDate weekEnd = weekStart.plusDays(6);
@@ -136,7 +138,7 @@ public class StatsService {
         long totalSeconds = sessionRepository.sumElapsedTimeByUser(user);
 
         // 이번주 월~일 일별 공부 시간
-        LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekStart = LocalDate.now(KST).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDateTime startDt = weekStart.atStartOfDay();
         LocalDateTime endDt = weekStart.plusDays(6).atTime(LocalTime.MAX);
 

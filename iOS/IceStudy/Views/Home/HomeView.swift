@@ -17,6 +17,12 @@ struct HomeView: View {
     // 주별 캐시 [weekOffset: WeekData]
     @State private var weekCache: [Int: WeekData] = [:]
 
+    // 카운트업 애니메이션용
+    @State private var displayFilledML: Int = 0
+    @State private var displayGoalML: Int = 0
+    @State private var displayTotalHours: Int = 0
+    @State private var displayTotalMinutes: Int = 0
+
     private var currentData: WeekData {
         weekCache[weekOffset] ?? WeekData()
     }
@@ -25,6 +31,13 @@ struct HomeView: View {
     private var goalML: Int { currentData.goalML }
     private var totalHours: Int { currentData.totalMinutes / 60 }
     private var totalMinutes: Int { currentData.totalMinutes % 60 }
+
+    private var isGoalExceeded: Bool {
+        filledML > goalML && goalML > 0
+    }
+
+    @State private var animatedFillRatio: CGFloat = 0
+    @State private var goldFillRatio: CGFloat = 0
 
     private var fillRatio: CGFloat {
         guard goalML > 0 else { return 0 }
@@ -92,12 +105,64 @@ struct HomeView: View {
         .task(id: weekOffset) {
             await fetchWeeklyStats(for: weekOffset)
         }
+        .onChange(of: filledML) {
+            goldFillRatio = 0
+            animateCountUp()
+            withAnimation(.easeOut(duration: 1.2)) {
+                animatedFillRatio = fillRatio
+            }
+            // 목표 초과 시 다음 프레임에서 금색 올라오기
+            if isGoalExceeded {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    withAnimation(.easeOut(duration: 1)) {
+                        goldFillRatio = fillRatio
+                    }
+                }
+            }
+        }
+        .onChange(of: goalML) { animateCountUp() }
+        .onChange(of: totalMinutes) { animateCountUp() }
         .onChange(of: needsRefresh) { _, refresh in
             if refresh {
                 needsRefresh = false
                 Task {
                     await fetchWeeklyStats(for: weekOffset)
                 }
+            }
+        }
+    }
+
+    // MARK: - 카운트업 애니메이션
+    @State private var countUpTimer: Timer?
+
+    private func animateCountUp() {
+        countUpTimer?.invalidate()
+
+        let fromFilledML = displayFilledML
+        let fromGoalML = displayGoalML
+        let fromHours = displayTotalHours
+        let fromMinutes = displayTotalMinutes
+        let targetFilledML = filledML
+        let targetGoalML = goalML
+        let targetHours = totalHours
+        let targetMinutes = totalMinutes
+
+        let steps = 30
+        var currentStep = 0
+        let interval = 0.8 / Double(steps)
+
+        countUpTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
+            currentStep += 1
+            let fraction = Double(currentStep) / Double(steps)
+            let eased = 1 - pow(1 - fraction, 3)
+
+            displayFilledML = fromFilledML + Int(Double(targetFilledML - fromFilledML) * eased)
+            displayGoalML = fromGoalML + Int(Double(targetGoalML - fromGoalML) * eased)
+            displayTotalHours = fromHours + Int(Double(targetHours - fromHours) * eased)
+            displayTotalMinutes = fromMinutes + Int(Double(targetMinutes - fromMinutes) * eased)
+
+            if currentStep >= steps {
+                timer.invalidate()
             }
         }
     }
@@ -201,12 +266,12 @@ struct HomeView: View {
                 .foregroundColor(AppColor.textPrimary)
 
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(filledML)")
+                Text("\(displayFilledML)")
                     .font(AppFont.largeTitle())
-                    .foregroundColor(AppColor.primary)
+                    .foregroundColor(goldFillRatio > 0 ? Color(hex: "FFB300") : AppColor.primary)
                 Text("ml")
                     .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(AppColor.primary)
+                    .foregroundColor(goldFillRatio > 0 ? Color(hex: "FFB300") : AppColor.primary)
             }
         }
     }
@@ -235,6 +300,7 @@ struct HomeView: View {
                     .frame(width: cupWidth, height: cupHeight)
 
                 if fillRatio > 0 {
+                    // 파란 물 (금색 올라오면 사라짐)
                     GlassCupShape()
                         .fill(
                             LinearGradient(
@@ -252,8 +318,33 @@ struct HomeView: View {
                             Rectangle()
                                 .frame(height: cupHeight)
                                 .frame(height: cupHeight, alignment: .bottom)
-                                .offset(y: cupHeight * (1.0 - fillRatio))
+                                .offset(y: cupHeight * (1.0 - animatedFillRatio))
                         )
+                        .opacity(goldFillRatio > 0 ? 0 : 1)
+                        .animation(.easeOut(duration: 0.5), value: goldFillRatio)
+
+                    // 금색 물 (목표 초과 시 밑에서 스르륵)
+                    if goldFillRatio > 0 {
+                        GlassCupShape()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(hex: "FFD700").opacity(0.25),
+                                        Color(hex: "FFC107").opacity(0.38),
+                                        Color(hex: "FFB300").opacity(0.48)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(width: cupWidth, height: cupHeight)
+                            .mask(
+                                Rectangle()
+                                    .frame(height: cupHeight)
+                                    .frame(height: cupHeight, alignment: .bottom)
+                                    .offset(y: cupHeight * (1.0 - goldFillRatio))
+                            )
+                    }
                 }
 
                 GlassCupShape()
@@ -335,7 +426,7 @@ struct HomeView: View {
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textPrimary)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(goalML)")
+                    Text("\(displayGoalML)")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(AppColor.primary)
                     Text("ml")
@@ -350,13 +441,13 @@ struct HomeView: View {
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textPrimary)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(totalHours)")
+                    Text("\(displayTotalHours)")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(AppColor.primary)
                     Text("시간")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(AppColor.primary)
-                    Text("\(totalMinutes)")
+                    Text("\(displayTotalMinutes)")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(AppColor.primary)
                     Text("분")

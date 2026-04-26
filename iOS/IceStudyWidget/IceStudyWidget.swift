@@ -71,6 +71,14 @@ struct BucketWidgetView: View {
         return min(CGFloat(entry.data.filledMl) / CGFloat(entry.data.goalMl), 1.0)
     }
 
+    private var isGoalExceeded: Bool {
+        entry.data.filledMl > entry.data.goalMl && entry.data.goalMl > 0
+    }
+
+    private var accentColor: Color {
+        isGoalExceeded ? Color(hex: "FFB300") : Color(hex: "48C7FF")
+    }
+
     private var hours: Int { entry.data.totalMinutes / 60 }
     private var minutes: Int { entry.data.totalMinutes % 60 }
 
@@ -83,7 +91,7 @@ struct BucketWidgetView: View {
 
             Text("\(entry.data.filledMl)ml")
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(Color(hex: "48C7FF"))
+                .foregroundColor(accentColor)
                 .padding(.top, 2)
                 .padding(.bottom, -4)
 
@@ -100,10 +108,15 @@ struct BucketWidgetView: View {
                         WidgetCupShape()
                             .fill(
                                 LinearGradient(
-                                    colors: [
-                                        Color(hex: "48C7FF").opacity(0.15),
-                                        Color(hex: "48C7FF").opacity(0.3)
-                                    ],
+                                    colors: isGoalExceeded
+                                        ? [
+                                            Color(hex: "FFD700").opacity(0.2),
+                                            Color(hex: "FFB300").opacity(0.4)
+                                        ]
+                                        : [
+                                            Color(hex: "48C7FF").opacity(0.15),
+                                            Color(hex: "48C7FF").opacity(0.3)
+                                        ],
                                     startPoint: .top,
                                     endPoint: .bottom
                                 )
