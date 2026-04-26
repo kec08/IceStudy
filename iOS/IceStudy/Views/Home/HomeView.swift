@@ -55,14 +55,26 @@ struct HomeView: View {
 
     private var weekLabel: String {
         let calendar = Calendar.current
-        let today = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: Date()) ?? Date()
-        let year = calendar.component(.year, from: today)
-        let month = calendar.component(.month, from: today)
-        let weekOfMonth = calendar.component(.weekOfMonth, from: today)
+        let today = Date()
+        // 이번주 월요일 구하기
+        let weekday = calendar.component(.weekday, from: today)
+        let daysToMonday = (weekday == 1) ? -6 : (2 - weekday)
+        let thisMonday = calendar.date(byAdding: .day, value: daysToMonday, to: today)!
+        let monday = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: thisMonday)!
+        let sunday = calendar.date(byAdding: .day, value: 6, to: monday)!
 
-        let weekNames = ["첫째주", "둘째주", "셋째주", "넷째주", "다섯째주"]
-        let weekName = weekOfMonth <= weekNames.count ? weekNames[weekOfMonth - 1] : "\(weekOfMonth)주"
-        return "\(year)년 \(month)월 \(weekName)"
+        let startMonth = calendar.component(.month, from: monday)
+        let startDay = calendar.component(.day, from: monday)
+        let endMonth = calendar.component(.month, from: sunday)
+        let endDay = calendar.component(.day, from: sunday)
+
+        let year = calendar.component(.year, from: monday)
+
+        if startMonth == endMonth {
+            return "\(year)년 \(startMonth)월 \(startDay)일 ~ \(endDay)일"
+        } else {
+            return "\(year)년 \(startMonth)월 \(startDay)일 ~ \(endMonth)월 \(endDay)일"
+        }
     }
 
     var body: some View {
@@ -125,8 +137,9 @@ struct HomeView: View {
         .onChange(of: needsRefresh) { _, refresh in
             if refresh {
                 needsRefresh = false
+                weekOffset = 0
                 Task {
-                    await fetchWeeklyStats(for: weekOffset)
+                    await fetchWeeklyStats(for: 0)
                 }
             }
         }

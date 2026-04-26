@@ -3,6 +3,8 @@ import SwiftUI
 struct TimerRunningView: View {
     @Bindable var viewModel: TimerViewModel
     @State private var showAbortAlert = false
+    @State private var showFocusGuide = false
+    @AppStorage("hasSeenFocusGuide") private var hasSeenFocusGuide = false
 
     var body: some View {
         ZStack {
@@ -87,17 +89,26 @@ struct TimerRunningView: View {
             // 집중모드 (화면 꺼짐 방지)
             Button {
                 viewModel.toggleFocusMode()
+                if viewModel.isFocusMode && !hasSeenFocusGuide {
+                    showFocusGuide = true
+                    hasSeenFocusGuide = true
+                }
             } label: {
                 ZStack {
                     Circle()
                         .fill(viewModel.isFocusMode ? AppColor.primary : Color(hex: "E8E8E8"))
                         .frame(width: 48, height: 48)
-                    Image(systemName: viewModel.isFocusMode ? "moon.fill" : "moon")
+                    Image(systemName: "lock.fill")
                         .font(.system(size: 18))
                         .foregroundColor(viewModel.isFocusMode ? .white : AppColor.textSecondary)
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: viewModel.isFocusMode)
+            .alert("화면이 꺼지지 않아요", isPresented: $showFocusGuide) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text("공부하는 동안 화면이 꺼지지 않습니다.")
+            }
 
             // 재생 / 일시정지
             Button {
