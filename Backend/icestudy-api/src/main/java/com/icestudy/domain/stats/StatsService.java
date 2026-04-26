@@ -31,11 +31,11 @@ public class StatsService {
     private final SessionRepository sessionRepository;
 
     public WeeklyStatsResponse getWeeklyStats(User user, int weekOffset) {
-        // 이번주 월요일 기준으로 weekOffset만큼 이전/이후 주
-        // iOS: 0=이번주, -1=지난주, -2=2주전 (음수=과거)
+        // 이번주 월요일 기준으로 weekOffset만큼 이전 주
+        // iOS: 0=이번주, -1=지난주 → abs로 변환
         LocalDate weekStart = LocalDate.now(KST)
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                .plusWeeks(weekOffset);
+                .minusWeeks(Math.abs(weekOffset));
         LocalDate weekEnd = weekStart.plusDays(6);
 
         LocalDateTime startDt = weekStart.atStartOfDay();
