@@ -70,11 +70,21 @@
 			);
 			target = BCAAFF712F99A33400A6B597 /* IceStudyWidgetExtension */;
 		};
+		BCDD400A2F9EE632006E57E8 /* Exceptions for "IceStudy" folder in "IceStudy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BC2510562F3E04E900B7B09A /* IceStudy */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		BC2510592F3E04E900B7B09A /* IceStudy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BCDD400A2F9EE632006E57E8 /* Exceptions for "IceStudy" folder in "IceStudy" target */,
+			);
 			path = IceStudy;
 			sourceTree = "<group>";
 		};
@@ -528,7 +538,9 @@
 				DEVELOPMENT_TEAM = QLF22M2925;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = IceStudy/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "얼공";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "현재 온도를 가져와 얼음이 녹는 속도를 조절합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -566,7 +578,9 @@
 				DEVELOPMENT_TEAM = QLF22M2925;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = IceStudy/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "얼공";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "현재 온도를 가져와 얼음이 녹는 속도를 조절합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

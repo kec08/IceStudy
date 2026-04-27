@@ -22,6 +22,15 @@ struct TimerRunningView: View {
 
                 Spacer()
 
+                // 온도 표시
+                if let temp = viewModel.currentTemperature,
+                   let zone = viewModel.temperatureZone {
+                    Text("현재 온도  \(temp)°")
+                        .font(AppFont.headline())
+                        .foregroundColor(zone.color)
+                        .padding(.bottom, 4)
+                }
+
                 // 상태 텍스트
                 Text("\(viewModel.cupSize.rawValue) 얼음컵")
                     .font(AppFont.headline())

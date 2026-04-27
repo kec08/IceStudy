@@ -17,6 +17,11 @@ class TimerViewModel {
     var elapsedSeconds: Int = 0
     var isFocusMode: Bool = false
 
+    // 온도
+    var currentTemperature: Int? = nil
+    var temperatureZone: TemperatureZone? = nil
+    var isFetchingTemperature: Bool = false
+
     private(set) var totalDuration: Int = 0
     private var timer: AnyCancellable?
     private var backgroundDate: Date?
@@ -46,10 +51,30 @@ class TimerViewModel {
         (elapsedSeconds % 3600) / 60
     }
 
+    // MARK: - 온도
+    func fetchTemperature() async {
+        guard !isFetchingTemperature else { return }
+        await MainActor.run { isFetchingTemperature = true }
+        do {
+            let location = try await LocationService.shared.requestOnce()
+            let celsius = try await IceWeatherService.shared.fetchTemperature(at: location)
+            await MainActor.run {
+                self.currentTemperature = celsius
+                self.temperatureZone = TemperatureZone(celsius: celsius)
+                self.isFetchingTemperature = false
+            }
+        } catch {
+            print("온도 가져오기 실패: \(error)")
+            await MainActor.run { self.isFetchingTemperature = false }
+        }
+    }
+
     // MARK: - Actions
     func startTimer(size: CupSize) {
         cupSize = size
-        totalDuration = size.randomDuration()
+        let raw = size.randomDuration()
+        let multiplier = temperatureZone?.multiplier ?? 1.0
+        totalDuration = Int(Double(raw) * multiplier)
         elapsedSeconds = 0
         timerState = .running
         setupTimer()

@@ -12,7 +12,7 @@ enum AuthAPI {
 extension AuthAPI: TargetType {
 
     var baseURL: URL {
-        URL(string: "https://icestudy-api-production.up.railway.app")!
+        URL(string: "http://13.125.255.219:8080")!
     }
 
     var path: String {

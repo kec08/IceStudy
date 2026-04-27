@@ -20,6 +20,27 @@ struct CupSelectionView: View {
 
                 Spacer()
 
+                // 온도 표시
+                if let temp = viewModel.currentTemperature,
+                   let zone = viewModel.temperatureZone {
+                    VStack(spacing: 4) {
+                        Text("현재 온도  \(temp)°")
+                            .font(AppFont.headline())
+                            .foregroundColor(zone.color)
+                        Text(zone.message)
+                            .font(AppFont.caption())
+                            .foregroundColor(zone.color)
+                    }
+                    .padding(.bottom, 12)
+                    .transition(.opacity)
+                } else if viewModel.isFetchingTemperature {
+                    Text("날씨 불러오는중...")
+                        .font(AppFont.caption())
+                        .foregroundColor(AppColor.textTertiary)
+                        .padding(.bottom, 12)
+                        .transition(.opacity)
+                }
+
                 // 타이틀
                 Text("얼음컵을 선택해주세요")
                     .font(AppFont.title2())
@@ -53,6 +74,11 @@ struct CupSelectionView: View {
                 .disabled(selectedCup == nil)
                 .padding(.bottom, 80)
             }
+        }
+        .animation(.easeInOut(duration: 0.5), value: viewModel.currentTemperature)
+        .animation(.easeInOut(duration: 0.5), value: viewModel.isFetchingTemperature)
+        .task {
+            await viewModel.fetchTemperature()
         }
     }
 

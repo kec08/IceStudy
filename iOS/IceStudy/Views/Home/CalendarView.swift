@@ -1,11 +1,25 @@
 import SwiftUI
 
+// 달력 데이터를 뷰 외부에 캐시 (달력 닫았다 열어도 유지)
+private final class CalendarCache {
+    static let shared = CalendarCache()
+    var studyData: [String: (minutes: Int, ml: Int)] = [:]
+    var loadedMonths: Set<String> = []
+
+    func invalidateCurrentMonth() {
+        let calendar = Calendar.current
+        let now = Date()
+        let year = calendar.component(.year, from: now)
+        let month = calendar.component(.month, from: now)
+        loadedMonths.remove("\(year)-\(month)")
+    }
+}
+
 struct StudyCalendarView: View {
     @Environment(\.dismiss) var dismiss
 
-    // 서버 데이터: [yyyy-MM-dd: (minutes, ml)]
-    @State private var studyData: [String: (minutes: Int, ml: Int)] = [:]
-    @State private var loadedMonths: Set<String> = []
+    @State private var studyData: [String: (minutes: Int, ml: Int)] = CalendarCache.shared.studyData
+    @State private var loadedMonths: Set<String> = CalendarCache.shared.loadedMonths
     @State private var scrollTarget: Int?
 
     private var months: [(year: Int, month: Int)] {
@@ -66,6 +80,10 @@ struct StudyCalendarView: View {
                         .padding(.bottom, 40)
                     }
                     .onAppear {
+                        // 이번 달만 다시 조회 (새 공부 데이터 반영)
+                        CalendarCache.shared.invalidateCurrentMonth()
+                        loadedMonths = CalendarCache.shared.loadedMonths
+
                         // 현재 달로 스크롤
                         if let lastMonth = months.last?.month {
                             proxy.scrollTo(lastMonth, anchor: .top)
@@ -91,6 +109,9 @@ struct StudyCalendarView: View {
                     studyData[day.date] = (minutes, ml)
                 }
             }
+            // 캐시 동기화
+            CalendarCache.shared.studyData = studyData
+            CalendarCache.shared.loadedMonths = loadedMonths
         } catch {
             print("캘린더 \(year)-\(month) 조회 실패: \(error.localizedDescription)")
             loadedMonths.remove(key)

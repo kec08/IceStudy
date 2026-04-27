@@ -77,7 +77,7 @@ struct TimerResultView: View {
 
     // MARK: - 포기 헤더
     private var abortedHeader: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 16) {
             Text("집중이 중단되었습니다")
                 .font(AppFont.title3())
                 .foregroundColor(AppColor.textPrimary)
