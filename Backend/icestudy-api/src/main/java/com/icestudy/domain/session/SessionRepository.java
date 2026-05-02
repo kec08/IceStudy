@@ -2,6 +2,7 @@ package com.icestudy.domain.session;
 
 import com.icestudy.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,5 +27,7 @@ public interface SessionRepository extends JpaRepository<StudySession, Long> {
     @Query("SELECT COALESCE(SUM(s.elapsedTime), 0) FROM StudySession s WHERE s.user = :user")
     long sumElapsedTimeByUser(@Param("user") User user);
 
-    void deleteAllByUser(User user);
+    @Modifying
+    @Query("DELETE FROM StudySession s WHERE s.user = :user")
+    void deleteAllByUser(@Param("user") User user);
 }

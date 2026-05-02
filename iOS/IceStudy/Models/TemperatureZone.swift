@@ -23,9 +23,9 @@ enum TemperatureZone {
 
     var color: Color {
         switch self {
-        case .cold: Color(hex: "212121")
+        case .cold: Color(hex: "2074AB")
         case .comfortable: Color(hex: "F5A623")
-        case .hot: Color(hex: "F06292")
+        case .hot: Color(hex: "D76831")
         }
     }
 

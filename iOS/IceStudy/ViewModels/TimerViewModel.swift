@@ -22,10 +22,71 @@ class TimerViewModel {
     var temperatureZone: TemperatureZone? = nil
     var isFetchingTemperature: Bool = false
 
+    // 백색소음
+    var isNoiseOn: Bool = false
+    var noiseType: NoiseType = .waterDrop
+    var noiseVolume: Float = 0.3
+
     private(set) var totalDuration: Int = 0
     private var timer: AnyCancellable?
     private var backgroundDate: Date?
     private(set) var currentSessionId: Int?
+
+    // MARK: - 세션 영속화 (백그라운드 킬 대응)
+    private static let defaults = UserDefaults.standard
+    private static let kIsRunning = "timer_isRunning"
+    private static let kStartDate = "timer_startDate"
+    private static let kTotalDuration = "timer_totalDuration"
+    private static let kCupSize = "timer_cupSize"
+    private static let kSessionId = "timer_sessionId"
+
+    private func saveSession() {
+        Self.defaults.set(true, forKey: Self.kIsRunning)
+        Self.defaults.set(Date(), forKey: Self.kStartDate)
+        Self.defaults.set(totalDuration, forKey: Self.kTotalDuration)
+        Self.defaults.set(cupSize.rawValue, forKey: Self.kCupSize)
+        if let id = currentSessionId {
+            Self.defaults.set(id, forKey: Self.kSessionId)
+        }
+    }
+
+    private func clearSession() {
+        Self.defaults.removeObject(forKey: Self.kIsRunning)
+        Self.defaults.removeObject(forKey: Self.kStartDate)
+        Self.defaults.removeObject(forKey: Self.kTotalDuration)
+        Self.defaults.removeObject(forKey: Self.kCupSize)
+        Self.defaults.removeObject(forKey: Self.kSessionId)
+    }
+
+    func restoreSessionIfNeeded() {
+        guard Self.defaults.bool(forKey: Self.kIsRunning),
+              let startDate = Self.defaults.object(forKey: Self.kStartDate) as? Date,
+              let cupRaw = Self.defaults.string(forKey: Self.kCupSize),
+              let cup = CupSize(rawValue: cupRaw) else { return }
+
+        let savedDuration = Self.defaults.integer(forKey: Self.kTotalDuration)
+        let savedSessionId = Self.defaults.integer(forKey: Self.kSessionId)
+        let elapsed = Int(Date().timeIntervalSince(startDate))
+
+        cupSize = cup
+        totalDuration = savedDuration
+        currentSessionId = savedSessionId > 0 ? savedSessionId : nil
+
+        if elapsed >= savedDuration {
+            // 이미 완료됨
+            elapsedSeconds = savedDuration
+            timerState = .completed
+            setFocusMode(false)
+            sendComplete()
+            clearSession()
+        } else {
+            // 아직 진행 중
+            elapsedSeconds = elapsed
+            timerState = .running
+            setupTimer()
+            observeBackground()
+        }
+    }
 
     // MARK: - Computed
     var progress: CGFloat {
@@ -79,6 +140,7 @@ class TimerViewModel {
         timerState = .running
         setupTimer()
         observeBackground()
+        saveSession()
 
         // 타이머 완료 알림 예약 (백그라운드에서도 알림)
         NotificationManager.scheduleTimerCompleteNotification(after: totalDuration)
@@ -92,9 +154,10 @@ class TimerViewModel {
                 )
                 await MainActor.run {
                     self.currentSessionId = response.sessionId
+                    self.saveSession()
                 }
             } catch {
-                print("세션 생성 ���패: \(error.localizedDescription)")
+                print("세션 생성 실패: \(error.localizedDescription)")
             }
         }
     }
@@ -113,6 +176,7 @@ class TimerViewModel {
         timer?.cancel()
         timerState = .aborted
         setFocusMode(false)
+        stopNoise()
         NotificationManager.cancelTimerNotification()
 
         // 서버에 세션 포기 전송
@@ -142,6 +206,29 @@ class TimerViewModel {
         setFocusMode(isFocusMode)
     }
 
+    // MARK: - 백색소음
+    func toggleNoise() {
+        if isNoiseOn {
+            WhiteNoiseService.shared.stop()
+            isNoiseOn = false
+        } else {
+            WhiteNoiseService.shared.play(type: noiseType)
+            isNoiseOn = true
+        }
+    }
+
+    func changeNoiseType(_ type: NoiseType) {
+        noiseType = type
+        if isNoiseOn {
+            WhiteNoiseService.shared.play(type: type)
+        }
+    }
+
+    func updateNoiseVolume(_ vol: Float) {
+        noiseVolume = vol
+        WhiteNoiseService.shared.setVolume(vol)
+    }
+
     func reset() {
         timer?.cancel()
         timerState = .idle
@@ -149,7 +236,16 @@ class TimerViewModel {
         totalDuration = 0
         currentSessionId = nil
         setFocusMode(false)
+        stopNoise()
+        clearSession()
         NotificationManager.cancelTimerNotification()
+    }
+
+    private func stopNoise() {
+        if isNoiseOn {
+            WhiteNoiseService.shared.stop()
+            isNoiseOn = false
+        }
     }
 
     private func setFocusMode(_ enabled: Bool) {
@@ -169,6 +265,8 @@ class TimerViewModel {
                     self.timer?.cancel()
                     self.timerState = .completed
                     self.setFocusMode(false)
+                    self.stopNoise()
+                    self.clearSession()
                     NotificationManager.cancelTimerNotification()
                     self.sendComplete()
                 }

@@ -3,6 +3,17 @@ import SwiftUI
 struct TimerResultView: View {
     @Bindable var viewModel: TimerViewModel
     let isCompleted: Bool
+    @State private var shareImage: UIImage?
+    @State private var showShareSheet = false
+
+    private var waterML: Int { Int(viewModel.waterML) }
+    private var hours: Int { viewModel.elapsedHours }
+    private var minutes: Int { viewModel.elapsedMinutes }
+
+    private var shareText: String {
+        let timeStr = hours > 0 ? "\(hours)시간 \(minutes)분" : "\(minutes)분"
+        return "\(waterML)ml 녹였고 \(timeStr) 집중했습니다.\n얼공 해볼까요? \u{1F9CA}"
+    }
 
     var body: some View {
         ZStack {
@@ -10,10 +21,18 @@ struct TimerResultView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // 로고
+                // 로고 + 공유 버튼
                 HStack {
                     LogoHeaderView()
                     Spacer()
+                    Button {
+                        generateShareImage()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundColor(AppColor.primary)
+                            .frame(width: 44, height: 44)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
@@ -27,7 +46,7 @@ struct TimerResultView: View {
                     abortedHeader
                 }
 
-                // 컵 이미지 (완료: 물만 / 포기: 깨진 얼음)
+                // 컵 이미지
                 resultCupView
                     .frame(height: 280)
                     .padding(.horizontal, 24)
@@ -54,6 +73,29 @@ struct TimerResultView: View {
                 }
                 .padding(.bottom, 60)
             }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let image = shareImage {
+                ShareSheet(items: [image, shareText])
+            }
+        }
+    }
+
+    // MARK: - 공유 이미지 생성
+    private func generateShareImage() {
+        let card = ShareCardView(
+            waterML: waterML,
+            hours: hours,
+            minutes: minutes,
+            progress: isCompleted ? 0.9 : viewModel.progress * 0.9,
+            isCompleted: isCompleted
+        )
+
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = 3.0 // 고해상도
+        if let image = renderer.uiImage {
+            shareImage = image
+            showShareSheet = true
         }
     }
 
@@ -96,25 +138,20 @@ struct TimerResultView: View {
             let level: CGFloat = isCompleted ? 0.9 : viewModel.progress * 0.9
 
             ZStack {
-                // 바닥 그림자
                 Ellipse()
                     .fill(
                         RadialGradient(
                             colors: [.black.opacity(0.05), .clear],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: cupWidth * 0.4
+                            center: .center, startRadius: 0, endRadius: cupWidth * 0.4
                         )
                     )
                     .frame(width: cupWidth * 0.65, height: 14)
                     .offset(y: cupHeight * 0.52)
 
-                // 컵 유리
                 GlassCupShape()
                     .fill(Color(hex: "D8F0FF").opacity(0.04))
                     .frame(width: cupWidth, height: cupHeight)
 
-                // 물
                 GlassCupShape()
                     .fill(
                         LinearGradient(
@@ -123,8 +160,7 @@ struct TimerResultView: View {
                                 AppColor.primary.opacity(0.26),
                                 AppColor.primary.opacity(0.32)
                             ],
-                            startPoint: .top,
-                            endPoint: .bottom
+                            startPoint: .top, endPoint: .bottom
                         )
                     )
                     .frame(width: cupWidth, height: cupHeight)
@@ -135,12 +171,10 @@ struct TimerResultView: View {
                             .offset(y: cupHeight * (1.0 - level))
                     )
 
-                // 포기 시 깨진 얼음 조각
                 if !isCompleted {
                     brokenIceOverlay(cupWidth: cupWidth, cupHeight: cupHeight)
                 }
 
-                // 외곽선
                 GlassCupShape()
                     .stroke(
                         LinearGradient(
@@ -149,20 +183,17 @@ struct TimerResultView: View {
                                 Color(hex: "A0D4ED").opacity(0.35),
                                 Color(hex: "C6E8F9").opacity(0.5)
                             ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                            startPoint: .topLeading, endPoint: .bottomTrailing
                         ),
                         lineWidth: 1.5
                     )
                     .frame(width: cupWidth, height: cupHeight)
 
-                // 유리 반사
                 GlassCupShape()
                     .fill(
                         LinearGradient(
                             colors: [Color.white.opacity(0.3), Color.white.opacity(0.0)],
-                            startPoint: .topLeading,
-                            endPoint: .center
+                            startPoint: .topLeading, endPoint: .center
                         )
                     )
                     .frame(width: cupWidth, height: cupHeight)
@@ -173,7 +204,6 @@ struct TimerResultView: View {
                         }.frame(width: cupWidth)
                     )
 
-                // 바닥 두께
                 Ellipse()
                     .fill(Color(hex: "C0E4F5").opacity(0.15))
                     .frame(width: cupWidth * 0.45, height: 10)
@@ -183,7 +213,6 @@ struct TimerResultView: View {
         }
     }
 
-    // 깨진 얼음 (포기 시)
     private func brokenIceOverlay(cupWidth: CGFloat, cupHeight: CGFloat) -> some View {
         ZStack {
             brokenIce(size: 14, rotation: 25)
@@ -201,8 +230,7 @@ struct TimerResultView: View {
             .fill(
                 LinearGradient(
                     colors: [Color.white.opacity(0.7), Color(hex: "B8E6FA").opacity(0.4)],
-                    startPoint: .top,
-                    endPoint: .bottom
+                    startPoint: .top, endPoint: .bottom
                 )
             )
             .frame(width: size, height: size)
@@ -217,7 +245,7 @@ struct TimerResultView: View {
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textPrimary)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(Int(viewModel.waterML))")
+                    Text("\(waterML)")
                         .font(.system(size: 28, weight: .bold))
                     Text("ml")
                         .font(.system(size: 16, weight: .bold))
@@ -231,11 +259,11 @@ struct TimerResultView: View {
                     .font(AppFont.callout())
                     .foregroundColor(AppColor.textPrimary)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(viewModel.elapsedHours)")
+                    Text("\(hours)")
                         .font(.system(size: 28, weight: .bold))
                     Text("시간")
                         .font(.system(size: 14, weight: .bold))
-                    Text("\(viewModel.elapsedMinutes)")
+                    Text("\(minutes)")
                         .font(.system(size: 28, weight: .bold))
                     Text("분")
                         .font(.system(size: 14, weight: .bold))
@@ -245,6 +273,214 @@ struct TimerResultView: View {
             .frame(maxWidth: .infinity)
         }
     }
+}
+
+// MARK: - 공유 카드 이미지 (인스타 스토리 9:16 비율)
+struct ShareCardView: View {
+    let waterML: Int
+    let hours: Int
+    let minutes: Int
+    let progress: CGFloat
+    let isCompleted: Bool
+
+    private var timeStr: String {
+        hours > 0 ? "\(hours)시간 \(minutes)분" : "\(minutes)분"
+    }
+
+    private var todayStr: String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy.MM.dd"
+        return f.string(from: Date())
+    }
+
+    var body: some View {
+        ZStack {
+            // 배경: 흰색 → 하단만 연한 블루
+            LinearGradient(
+                stops: [
+                    .init(color: Color.white, location: 0.0),
+                    .init(color: Color.white, location: 0.6),
+                    .init(color: Color(hex: "EAF5FF"), location: 0.85),
+                    .init(color: Color(hex: "D8EEFB"), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                // 날짜
+                Text(todayStr)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(hex: "9E9E9E"))
+                    .padding(.bottom, 8)
+
+                // 로고
+                HStack(spacing: 8) {
+                    Image("IceCube")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 34, height: 34)
+                    Image("LogoText")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 20)
+                }
+                .padding(.bottom, 6)
+
+                // 상태 메시지
+                Text(isCompleted ? "얼음이 모두 녹았습니다" : "오늘도 공부했습니다")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color(hex: "666666"))
+                    .padding(.bottom, 24)
+
+                // 컵 시각화
+                shareCardCup
+                    .frame(width: 220, height: 244)
+                    .padding(.bottom, 28)
+
+                // 통계 카드
+                HStack(spacing: 14) {
+                    statPill(label: "녹인 물의 양", value: "\(waterML)", unit: "ml")
+                    statPill(label: "집중 시간", value: timeStr, unit: "")
+                }
+                .padding(.horizontal, 36)
+                .padding(.bottom, 20)
+
+                // 구분선
+                Rectangle()
+                    .fill(Color.white.opacity(0.5))
+                    .frame(width: 36, height: 2)
+                    .padding(.bottom, 16)
+
+                // 메시지
+                Text("\(waterML)ml 녹였고 \(timeStr) 집중했습니다.")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "212121"))
+                    .padding(.bottom, 4)
+
+                Text("얼공 해볼까요? \u{1F9CA}")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(Color(hex: "48C7FF"))
+
+                Spacer()
+            }
+        }
+        .frame(width: 1080 / 3, height: 1920 / 3) // 9:16 (1080x1920 @3x)
+        .clipShape(RoundedRectangle(cornerRadius: 0))
+    }
+
+    // MARK: - 통계 알약
+    private func statPill(label: String, value: String, unit: String) -> some View {
+        VStack(spacing: 6) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color(hex: "9E9E9E"))
+
+            if unit.isEmpty {
+                Text(value)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(Color(hex: "48C7FF"))
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(value)
+                        .font(.system(size: 22, weight: .bold))
+                    Text(unit)
+                        .font(.system(size: 13, weight: .bold))
+                }
+                .foregroundColor(Color(hex: "48C7FF"))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
+        )
+    }
+
+    // MARK: - 공유 카드 컵
+    private var shareCardCup: some View {
+        let cupW: CGFloat = 170
+        let cupH: CGFloat = 187
+
+        return ZStack {
+            Ellipse()
+                .fill(
+                    RadialGradient(
+                        colors: [.black.opacity(0.04), .clear],
+                        center: .center, startRadius: 0, endRadius: cupW * 0.4
+                    )
+                )
+                .frame(width: cupW * 0.6, height: 10)
+                .offset(y: cupH * 0.52)
+
+            GlassCupShape()
+                .fill(Color(hex: "D8F0FF").opacity(0.04))
+                .frame(width: cupW, height: cupH)
+
+            GlassCupShape()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: "48C7FF").opacity(0.18),
+                            Color(hex: "48C7FF").opacity(0.26),
+                            Color(hex: "48C7FF").opacity(0.32)
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+                .frame(width: cupW, height: cupH)
+                .mask(
+                    Rectangle()
+                        .frame(height: cupH)
+                        .frame(height: cupH, alignment: .bottom)
+                        .offset(y: cupH * (1.0 - progress))
+                )
+
+            GlassCupShape()
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: "C6E8F9").opacity(0.7),
+                            Color(hex: "A0D4ED").opacity(0.35),
+                            Color(hex: "C6E8F9").opacity(0.5)
+                        ],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+                .frame(width: cupW, height: cupH)
+
+            GlassCupShape()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.3), Color.white.opacity(0.0)],
+                        startPoint: .topLeading, endPoint: .center
+                    )
+                )
+                .frame(width: cupW, height: cupH)
+                .mask(
+                    HStack {
+                        Rectangle().frame(width: cupW * 0.28)
+                        Spacer()
+                    }.frame(width: cupW)
+                )
+        }
+    }
+}
+
+// MARK: - UIActivityViewController 래퍼
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - 깨진 얼음 삼각형 Shape
@@ -267,4 +503,9 @@ struct IceTriangle: Shape {
 #Preview("포기") {
     let vm = TimerViewModel()
     TimerResultView(viewModel: vm, isCompleted: false)
+}
+
+#Preview("공유 카드") {
+    ShareCardView(waterML: 355, hours: 1, minutes: 30, progress: 0.9, isCompleted: true)
+        .previewLayout(.sizeThatFits)
 }

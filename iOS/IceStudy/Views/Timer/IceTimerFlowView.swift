@@ -19,6 +19,9 @@ struct IceTimerFlowView: View {
         .animation(.easeInOut(duration: 0.3), value: viewModel.timerState == .idle)
         .animation(.easeInOut(duration: 0.3), value: viewModel.timerState == .completed)
         .animation(.easeInOut(duration: 0.3), value: viewModel.timerState == .aborted)
+        .onAppear {
+            viewModel.restoreSessionIfNeeded()
+        }
     }
 }
 
