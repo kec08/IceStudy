@@ -92,10 +92,17 @@ struct TimerResultView: View {
         )
 
         let renderer = ImageRenderer(content: card)
-        renderer.scale = 3.0 // 고해상도
-        if let image = renderer.uiImage {
-            shareImage = image
-            showShareSheet = true
+        renderer.scale = 3.0
+
+        // 첫 렌더링으로 에셋 이미지 캐시 워밍
+        _ = renderer.uiImage
+
+        // 캐시된 상태에서 다시 렌더링
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            if let image = renderer.uiImage {
+                self.shareImage = image
+                self.showShareSheet = true
+            }
         }
     }
 
