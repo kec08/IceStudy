@@ -67,8 +67,8 @@ struct TimerRunningView: View {
                     .foregroundColor(AppColor.primary)
                     .padding(.top, 4)
 
-                // 얼음 녹는 애니메이션
-                IceMeltingView(progress: viewModel.progress)
+                // 얼음 녹는 애니메이션 (컵 사이즈별 비선형 커브 적용)
+                IceMeltingView(progress: viewModel.iceVisualProgress)
                     .frame(height: 340)
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
@@ -95,7 +95,7 @@ struct TimerRunningView: View {
         if viewModel.timerState == .paused {
             return "잠깐 쉬어가는 중..."
         }
-        let p = viewModel.progress
+        let p = viewModel.iceVisualProgress
         switch p {
         case ..<0.1:
             return "얼음이 녹기 시작했어요"

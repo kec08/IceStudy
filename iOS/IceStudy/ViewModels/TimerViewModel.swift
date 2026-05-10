@@ -12,6 +12,9 @@ enum TimerState: Sendable, Equatable {
 
 @Observable
 class TimerViewModel {
+    /// 세션 서버 동기화 완료 시 HomeView 리프레시 트리거용
+    static let sessionSyncedNotification = Notification.Name("IceStudy.sessionSynced")
+
     var cupSize: CupSize = .tall
     var timerState: TimerState = .idle
     var elapsedSeconds: Int = 0
@@ -92,6 +95,25 @@ class TimerViewModel {
     var progress: CGFloat {
         guard totalDuration > 0 else { return 0 }
         return min(CGFloat(elapsedSeconds) / CGFloat(totalDuration), 1.0)
+    }
+
+    /// 컵 사이즈별 비선형 얼음 녹는 시각적 진행률
+    /// - TALL: 거의 선형 (약간 ease-out)
+    /// - GRANDE: 초반 느리게, 후반 가속
+    /// - VENTI: 초반 더 느리게, 후반 더 가속
+    var iceVisualProgress: CGFloat {
+        let p = progress
+        switch cupSize {
+        case .tall:
+            // 약간의 ease-out: 초반 살짝 빠르고 후반 느려짐
+            return 1 - pow(1 - p, 1.3)
+        case .grande:
+            // ease-in: 초반 느리게, 후반 가속 (지수 1.8)
+            return pow(p, 1.8)
+        case .venti:
+            // 더 강한 ease-in: 초반 매우 느리게, 후반 급가속 (지수 2.3)
+            return pow(p, 2.3)
+        }
     }
 
     var waterProgress: CGFloat {
@@ -178,23 +200,36 @@ class TimerViewModel {
         setFocusMode(false)
         stopNoise()
         NotificationManager.cancelTimerNotification()
+        clearSession()
 
-        // 서버에 세션 포기 전송
+        // 서버에 세션 포기 전송 — 값을 동기적으로 캡처
         let elapsed = elapsedSeconds
         let water = waterML
+        let sessionId = currentSessionId
         Task {
-            var retries = 0
-            while currentSessionId == nil && retries < 10 {
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                retries += 1
+            // 세션 ID가 아직 없으면 대기 (세션 생성 API가 느린 경우)
+            var resolvedId = sessionId
+            if resolvedId == nil {
+                var retries = 0
+                while self.currentSessionId == nil && retries < 10 {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    retries += 1
+                }
+                resolvedId = self.currentSessionId
             }
-            guard let sessionId = currentSessionId else { return }
+            guard let id = resolvedId else {
+                print("세션 ID를 받지 못해 포기 전송 실패")
+                return
+            }
             do {
                 _ = try await SessionService.shared.abortSession(
-                    id: sessionId,
+                    id: id,
                     elapsedTime: elapsed,
                     waterMl: water
                 )
+                // 위젯 갱신 + 홈 리프레시 트리거
+                WidgetCenter.shared.reloadAllTimelines()
+                NotificationCenter.default.post(name: Self.sessionSyncedNotification, object: nil)
             } catch {
                 print("세션 포기 전송 실패: \(error.localizedDescription)")
             }
@@ -276,25 +311,31 @@ class TimerViewModel {
     private func sendComplete() {
         let elapsed = elapsedSeconds
         let water = waterML
+        let sessionId = currentSessionId
         Task {
             // 세션 ID가 아직 없으면 최대 5초 대기
-            var retries = 0
-            while currentSessionId == nil && retries < 10 {
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                retries += 1
+            var resolvedId = sessionId
+            if resolvedId == nil {
+                var retries = 0
+                while self.currentSessionId == nil && retries < 10 {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    retries += 1
+                }
+                resolvedId = self.currentSessionId
             }
-            guard let sessionId = currentSessionId else {
+            guard let id = resolvedId else {
                 print("세션 ID를 받지 못해 완료 전송 실패")
                 return
             }
             do {
                 _ = try await SessionService.shared.completeSession(
-                    id: sessionId,
+                    id: id,
                     elapsedTime: elapsed,
                     waterMl: water
                 )
-                // 위젯 갱신
+                // 위젯 갱신 + 홈 리프레시 트리거
                 WidgetCenter.shared.reloadAllTimelines()
+                NotificationCenter.default.post(name: Self.sessionSyncedNotification, object: nil)
             } catch {
                 print("세션 완료 전송 실패: \(error.localizedDescription)")
             }
@@ -323,6 +364,10 @@ class TimerViewModel {
             if self.elapsedSeconds >= self.totalDuration {
                 self.elapsedSeconds = self.totalDuration
                 self.timerState = .completed
+                self.setFocusMode(false)
+                self.stopNoise()
+                self.clearSession()
+                NotificationManager.cancelTimerNotification()
                 self.sendComplete()
             } else if self.timerState == .running {
                 self.setupTimer()

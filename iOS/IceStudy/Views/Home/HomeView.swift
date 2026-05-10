@@ -143,6 +143,12 @@ struct HomeView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: TimerViewModel.sessionSyncedNotification)) { _ in
+            // 세션 완료/포기 서버 동기화 후 자동 리프레시
+            Task {
+                await fetchWeeklyStats(for: weekOffset)
+            }
+        }
     }
 
     // MARK: - 카운트업 애니메이션

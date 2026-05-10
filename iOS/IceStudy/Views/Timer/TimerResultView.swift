@@ -3,8 +3,7 @@ import SwiftUI
 struct TimerResultView: View {
     @Bindable var viewModel: TimerViewModel
     let isCompleted: Bool
-    @State private var shareImage: UIImage?
-    @State private var showShareSheet = false
+    @State private var shareItem: ShareItem?
 
     private var waterML: Int { Int(viewModel.waterML) }
     private var hours: Int { viewModel.elapsedHours }
@@ -74,35 +73,41 @@ struct TimerResultView: View {
                 .padding(.bottom, 60)
             }
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let image = shareImage {
-                ShareSheet(items: [image, shareText])
-            }
+        .sheet(item: $shareItem) { item in
+            ShareSheet(items: [item.image, shareText])
         }
     }
 
     // MARK: - 공유 이미지 생성
+    @State private var isGeneratingImage = false
+
     private func generateShareImage() {
-        let card = ShareCardView(
-            waterML: waterML,
-            hours: hours,
-            minutes: minutes,
-            progress: isCompleted ? 0.9 : viewModel.progress * 0.9,
-            isCompleted: isCompleted
-        )
+        guard !isGeneratingImage else { return }
+        isGeneratingImage = true
 
-        let renderer = ImageRenderer(content: card)
-        renderer.scale = 3.0
+        Task {
+            let card = ShareCardView(
+                waterML: waterML,
+                hours: hours,
+                minutes: minutes,
+                progress: isCompleted ? 0.9 : viewModel.iceVisualProgress * 0.9,
+                isCompleted: isCompleted
+            )
 
-        // 첫 렌더링으로 에셋 이미지 캐시 워밍
-        _ = renderer.uiImage
+            let renderer = ImageRenderer(content: card)
+            renderer.scale = 3.0
 
-        // 캐시된 상태에서 다시 렌더링
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            // 1차 렌더링: 에셋 이미지 캐시 워밍
+            _ = renderer.uiImage
+
+            // 에셋 로드 대기
+            try? await Task.sleep(nanoseconds: 400_000_000)
+
+            // 2차 렌더링: 에셋 캐시 완료 상태에서 최종 이미지 생성
             if let image = renderer.uiImage {
-                self.shareImage = image
-                self.showShareSheet = true
+                self.shareItem = ShareItem(image: image)
             }
+            self.isGeneratingImage = false
         }
     }
 
@@ -142,7 +147,7 @@ struct TimerResultView: View {
         GeometryReader { geo in
             let cupWidth = geo.size.width * 0.65
             let cupHeight = cupWidth * 1.1
-            let level: CGFloat = isCompleted ? 0.9 : viewModel.progress * 0.9
+            let level: CGFloat = isCompleted ? 0.9 : viewModel.iceVisualProgress * 0.9
 
             ZStack {
                 Ellipse()
@@ -488,6 +493,12 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - 공유 아이템 (sheet(item:) 용)
+struct ShareItem: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }
 
 // MARK: - 깨진 얼음 삼각형 Shape
