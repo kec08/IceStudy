@@ -44,13 +44,27 @@ struct HomeView: View {
         return min(CGFloat(filledML) / CGFloat(goalML), 1.0)
     }
 
-    // weekOffset 기반 결정적 랜덤 목표량 (1500~3000ml)
+    // weekOffset 기반 목표량 (1500~3000ml) - UserDefaults에 영구 저장
     private func goalForWeek(_ offset: Int) -> Int {
-        var hasher = Hasher()
-        hasher.combine(offset)
-        hasher.combine(2026)
-        let hash = abs(hasher.finalize())
-        return 1500 + (hash % 1501) // 1500 ~ 3000
+        let key = weekGoalKey(for: offset)
+        let saved = UserDefaults.standard.integer(forKey: key)
+        if saved > 0 { return saved }
+        // 첫 생성 시 랜덤 결정 후 저장
+        let goal = Int.random(in: 1500...3000)
+        UserDefaults.standard.set(goal, forKey: key)
+        return goal
+    }
+
+    private func weekGoalKey(for offset: Int) -> String {
+        let calendar = Calendar.current
+        let today = Date()
+        guard let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
+              let targetMonday = calendar.date(byAdding: .weekOfYear, value: offset, to: monday) else {
+            return "weekGoal_offset_\(offset)"
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return "weekGoal_\(formatter.string(from: targetMonday))"
     }
 
     private var weekLabel: String {
