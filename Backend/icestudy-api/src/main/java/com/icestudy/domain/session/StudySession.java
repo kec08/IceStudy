@@ -49,21 +49,21 @@ public class StudySession {
     private LocalDateTime completedAt;
 
     /**
-     * 세션 완료 처리 — 서버에서 waterMl 계산
+     * 세션 완료 처리 — 클라이언트에서 계산한 waterMl 사용 (온도 보정 포함)
      */
-    public void complete(int elapsedTime) {
+    public void complete(int elapsedTime, double waterMl) {
         this.elapsedTime = elapsedTime;
-        this.waterMl = WaterCalculator.calculate(this.cupSize, this.totalDuration, elapsedTime);
+        this.waterMl = waterMl;
         this.isCompleted = true;
         this.completedAt = LocalDateTime.now();
     }
 
     /**
-     * 세션 포기 처리 — 서버에서 waterMl 계산
+     * 세션 포기 처리 — 클라이언트에서 계산한 waterMl 사용 (온도 보정 포함)
      */
-    public void abort(int elapsedTime) {
+    public void abort(int elapsedTime, double waterMl) {
         this.elapsedTime = elapsedTime;
-        this.waterMl = WaterCalculator.calculate(this.cupSize, this.totalDuration, elapsedTime);
+        this.waterMl = waterMl;
         this.isCompleted = false;
         this.completedAt = LocalDateTime.now();
     }

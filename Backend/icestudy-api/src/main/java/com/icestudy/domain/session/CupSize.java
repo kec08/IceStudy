@@ -15,7 +15,12 @@ public enum CupSize {
     private final int maxSeconds;
     private final double maxMl;
 
+    /**
+     * 온도 보정(0.9x~1.1x) 적용된 totalDuration도 허용
+     */
     public boolean isValidDuration(int totalDuration) {
-        return totalDuration >= minSeconds && totalDuration <= maxSeconds;
+        int adjustedMin = (int) (minSeconds * 0.9);
+        int adjustedMax = (int) (maxSeconds * 1.1);
+        return totalDuration >= adjustedMin && totalDuration <= adjustedMax;
     }
 }

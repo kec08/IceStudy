@@ -41,14 +41,14 @@ public class SessionService {
     @Transactional
     public SessionResponse completeSession(User user, Long sessionId, SessionUpdateRequest request) {
         StudySession session = getSessionWithAuth(user, sessionId);
-        session.complete(request.getElapsedTime());
+        session.complete(request.getElapsedTime(), request.getWaterMl());
         return SessionResponse.from(session);
     }
 
     @Transactional
     public SessionResponse abortSession(User user, Long sessionId, SessionUpdateRequest request) {
         StudySession session = getSessionWithAuth(user, sessionId);
-        session.abort(request.getElapsedTime());
+        session.abort(request.getElapsedTime(), request.getWaterMl());
         return SessionResponse.from(session);
     }
 
